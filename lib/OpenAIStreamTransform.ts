@@ -1,12 +1,17 @@
 import {Transform, TransformCallback} from "stream";
 import * as JSON5 from './json5';
-import {Logger} from "./utils";
+
+import {Logger} from "./Logger";
 
 export interface OpenAIStreamObject {
     functionName?: string;
     chunk: string;
 }
 
+/**
+ * extracts object from OpenAI lines format ("data: ...")
+ *  transforms this into {OpenAIStreamObject}
+ **/
 export class OpenAIStreamTransform extends Transform {
     private functionName?: string = undefined;
 
@@ -51,7 +56,7 @@ export class OpenAIStreamTransform extends Transform {
                     // sometimes OpenAI sends us only partial json..
                     if (error.toString().trim().includes('invalid end of input')) {
                         this.partialChunk = chunk;
-                        callback();
+                        return callback();
                     } else {
                         this.logger?.error(`Error with JSON5.parse payload=[${payload}].\n${error}`, error, this.logMetaData)
                         return callback(new Error('error processing response, please try again'));

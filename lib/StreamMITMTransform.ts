@@ -1,13 +1,13 @@
 import {Transform, TransformCallback} from "stream";
 import {StreamedObject} from "./OpenAIStreamToStreamedObjectTransform";
 
-export class StreamMITM<T, OUT> extends Transform {
-    private consumer: (input: T, functionName?: string) => Promise<OUT>;
+export class StreamMITMTransform<T, OUT> extends Transform {
+    private transform: (input: T, functionName?: string) => Promise<OUT>;
     private streamObjectSeparator: string;
 
-    constructor(consumer: (input: T, functionName?: string) => Promise<OUT>, streamObjectSeparator: string = '|{-*-}|') {
+    constructor(transform: (input: T, functionName?: string) => Promise<OUT>, streamObjectSeparator: string = '|{-*-}|') {
         super({objectMode: true});
-        this.consumer = consumer;
+        this.transform = transform;
         this.streamObjectSeparator = streamObjectSeparator;
     }
 
@@ -15,7 +15,7 @@ export class StreamMITM<T, OUT> extends Transform {
         new Promise<void>(async (resolve) => {
             try {
                 const input = JSON.parse(chunk) as StreamedObject<T>;
-                const result = await this.consumer(input.stream, input.functionName)
+                const result = await this.transform(input.stream, input.functionName)
                 callback(null, JSON.stringify(result) + this.streamObjectSeparator);
             } catch (e: any) {
                 if (e instanceof Error) {

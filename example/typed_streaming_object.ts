@@ -1,15 +1,15 @@
 import {Configuration, OpenAIApi} from "openai";
 import {JSONSchemaType} from "ajv";
 import {pipeline} from "stream";
-import {Contractor, OpenAIClient, StreamDebugger} from "contractor";
-import {
-    basicLogger,
-} from "../lib";
+import {Contractor, OpenAIClient, StreamDebuggerTransform} from "contractor";
+import {prefixedLogger,} from "../lib";
 
 
+export const typedStreamingObject = () => {
 
-export const advancedExample = () => {
     const apiKey = process.env.OPENAI_API_KEY;
+
+    const logger = prefixedLogger('typedStreamingObject');
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY env var not provided');
     }
@@ -20,7 +20,7 @@ export const advancedExample = () => {
     const openaiClient = new OpenAIApi(configuration);
     const client = new OpenAIClient(openaiClient);
 
-    const contractor = new Contractor(client, undefined, undefined, undefined, basicLogger);
+    const contractor = new Contractor(client, undefined, undefined, undefined, logger);
 
     const MathMultiplyOperation: JSONSchemaType<{ firstNumber: number, secondNumber: number }> = {
         type: "object",
@@ -41,7 +41,7 @@ export const advancedExample = () => {
     };
 
 
-    contractor.streamingFunction('',
+    contractor.streamingFunction('you are a calculator agent',
         [{role: 'user', content: 'what is the sum of 2+2?'}],
         'gpt3',
         [
@@ -57,24 +57,28 @@ export const advancedExample = () => {
             },
         ], async streamingObject => {
             if (streamingObject.name === 'math_add_operation') {
-                return streamingObject.value.firstNumber + streamingObject.value.secondNumber;
+                return {
+                    result: streamingObject.value.firstNumber + streamingObject.value.secondNumber
+                };
             } else if (streamingObject.name === 'math_multiply_operation') {
-                return streamingObject.value.firstNumber * streamingObject.value.secondNumber;
+                return {
+                    result: streamingObject.value.firstNumber * streamingObject.value.secondNumber
+                };
             }
             return ""
-        }).then((rs) => {
-
-        if (rs) {
-            pipeline(rs,
-                new StreamDebugger("FINAL OUTPUT", true), // comment in to see in console,
-                (err) => {
-                    if (err) {
-                        console.error('Stream failed.', err);
-                    } else {
-                        console.log('Stream is done reading.');
+        })
+        .then(rs => {
+            if (rs) {
+                pipeline(rs,
+                    new StreamDebuggerTransform("FINAL OUTPUT", true, logger), // comment in to see in console,
+                    (err) => {
+                        if (err) {
+                            logger.error('Stream failed.', err);
+                        } else {
+                            logger.info('Stream is done reading.');
+                        }
                     }
-                }
-            )
-        }
-    });
+                )
+            }
+        });
 }

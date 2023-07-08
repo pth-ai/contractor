@@ -1,6 +1,6 @@
 import {Transform} from "stream";
 
-export class StreamReader<T> extends Transform {
+export class StreamReaderTransform<T> extends Transform {
     private consumer: (input: T) => void;
 
     constructor(consumer: (input: T) => void) {

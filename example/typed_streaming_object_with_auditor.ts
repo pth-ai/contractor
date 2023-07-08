@@ -1,15 +1,15 @@
 import {Configuration, OpenAIApi} from "openai";
 import {JSONSchemaType} from "ajv";
 import {pipeline} from "stream";
-import {Contractor, OpenAIClient, StreamDebugger} from "contractor";
-import {prefixedLogger,} from "../lib";
+import {Contractor, OpenAIClient, StreamDebuggerTransform} from "contractor";
+import {IAuditor, prefixedLogger,} from "../lib";
 
 
-export const typedStreamingObject = () => {
+export const typedStreamingObjectWithAuditor = () => {
 
     const apiKey = process.env.OPENAI_API_KEY;
 
-    const logger = prefixedLogger('typedStreamingObject');
+    const logger = prefixedLogger('typedStreamingObjectWithAuditor');
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY env var not provided');
     }
@@ -20,7 +20,13 @@ export const typedStreamingObject = () => {
     const openaiClient = new OpenAIApi(configuration);
     const client = new OpenAIClient(openaiClient);
 
-    const contractor = new Contractor(client, undefined, undefined, undefined, logger);
+    const auditor = {
+        auditRequest: record => {
+            logger.info(`auditor record [${JSON.stringify(record)}]`)
+        }
+    } as IAuditor<{ userId: string }>
+
+    const contractor = new Contractor(client, auditor, undefined, undefined, logger);
 
     const MathMultiplyOperation: JSONSchemaType<{ firstNumber: number, secondNumber: number }> = {
         type: "object",
@@ -55,7 +61,8 @@ export const typedStreamingObject = () => {
                 description: 'multiply two numbers',
                 parameters: MathMultiplyOperation
             },
-        ], async streamingObject => {
+        ],
+        async streamingObject => {
             if (streamingObject.name === 'math_add_operation') {
                 return {
                     result: streamingObject.value.firstNumber + streamingObject.value.secondNumber
@@ -66,16 +73,19 @@ export const typedStreamingObject = () => {
                 };
             }
             return ""
-        })
+        },
+        undefined,
+        {userId: 'user-id-for-auditing'}
+    )
         .then(rs => {
             if (rs) {
                 pipeline(rs,
-                    new StreamDebugger("FINAL OUTPUT", true, logger), // comment in to see in console,
+                    new StreamDebuggerTransform("FINAL OUTPUT", true, logger), // comment in to see in console,
                     (err) => {
                         if (err) {
-                            console.error('Stream failed.', err);
+                            logger.error('Stream failed.', err);
                         } else {
-                            console.log('Stream is done reading.');
+                            logger.info('Stream is done reading.');
                         }
                     }
                 )

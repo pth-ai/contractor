@@ -3,16 +3,17 @@
   "version": "0.5.0",
   "description": "OpenAI functions result streaming made easy",
   "repository": "git@github.com:pth-ai/contractor.git",
-  "author": "Pth.AI",
+  "author": "Roman Landenband",
   "license": "MIT",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc --outDir dist/"
+    "run_example": "ts-node index.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "ajv": "^8.12.0",
-    "openai": "^3.3.0"
+    "contractor": "../",
+    "openai": "^3.3.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.0",

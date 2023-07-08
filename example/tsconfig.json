@@ -6,9 +6,8 @@
     "module": "commonjs",
     "noImplicitAny": true,
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "../",
     "allowJs": true,
-    "strictNullChecks": true,
     "typeRoots": [
       "node_modules/@types"
     ],
@@ -16,10 +15,11 @@
       "DOM"
     ]
   },
+  "include": [
+    "../"
+  ],
   "exclude": [
     "dist",
     "node_modules",
-    "example",
-    "tests"
   ]
 }

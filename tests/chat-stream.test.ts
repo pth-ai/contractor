@@ -1,10 +1,16 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
-import {ThrottledTransform, ThrottledTransformOptions, WriteTo} from "../src/util/ThrottleTransform";
 import {createReadStream, readFileSync} from "fs";
 import {PassThrough, pipeline} from "stream";
-import {SplitStreamLines, StreamDebugger, StreamReader} from "./testHelpers";
+import {SplitStreamLines} from "./testHelpers";
 import {expect} from "chai";
-import {OpenAIStreamTransform} from "../src/util/OpenAIStreamTransform";
+import {
+    ThrottledTransform,
+    ThrottledTransformOptions,
+    WriteTo,
+    basicLogger,
+    OpenAIStreamTransform,
+    StreamDebuggerTransform, StreamReaderTransform
+} from "../lib";
 
 const timeTickInitMS = 100;
 
@@ -40,8 +46,8 @@ describe("chat streams", () => {
         const piped = pipeline(
             createReadStream(__dirname + '/openai_stream.txt'),
             new SplitStreamLines(),
-            new ThrottledTransform(options, writeTo),
-            new StreamReader<string[]>((x) => resultText += x.join('')),
+            new ThrottledTransform(options, basicLogger, writeTo),
+            new StreamReaderTransform<string[]>((x) => resultText += x.join('')),
             err => {
                 if (err) {
                     hasErrors = true;
@@ -89,14 +95,14 @@ describe("chat streams", () => {
         const piped = pipeline(
             createReadStream(__dirname + '/openai_stream.txt'),
             new SplitStreamLines({objectMode: true}),
-            new StreamDebugger('SplitStreamLines'),
-            new OpenAIStreamTransform('test-team', 'test-task'),
-            new StreamDebugger('OpenAIStreamTransform'),
-            new ThrottledTransform(options, writeTo),
-            new StreamDebugger('ThrottledTransform'),
-            new StreamReader<{chunk: string}[]>((x) => resultText += x.map(_ => _.chunk).join('')),
+            new StreamDebuggerTransform('SplitStreamLines'),
+            new OpenAIStreamTransform(basicLogger),
+            new StreamDebuggerTransform('OpenAIStreamTransform'),
+            new ThrottledTransform(options, basicLogger, writeTo),
+            new StreamDebuggerTransform('ThrottledTransform'),
+            new StreamReaderTransform<{chunk: string}[]>((x) => resultText += x.map(_ => _.chunk).join('')),
             new PassThrough({objectMode: true}),
-            new StreamDebugger('StreamReader', true),
+            new StreamDebuggerTransform('StreamReader', true),
             err => {
                 if (err) {
                     hasErrors = true;

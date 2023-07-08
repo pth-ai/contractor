@@ -18,11 +18,10 @@ export interface IOpenAIClient {
 
 }
 
-export type IsFlagged = boolean;
+type IsFlagged = boolean;
 
 export class OpenAIClient implements IOpenAIClient {
     private openAIApi: OpenAIApi;
-
 
     constructor(openAIApi: OpenAIApi) {
         this.openAIApi = openAIApi;

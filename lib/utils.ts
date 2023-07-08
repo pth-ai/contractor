@@ -1,16 +1,9 @@
-import Ajv, {JSONSchemaType, ValidateFunction} from "ajv";
 import SparkMD5 from "spark-md5";
 
 export function assertIsDefined<T>(value: T | null | undefined, errorMsg: string = 'value was not defined'): asserts value is T {
     if (value === null || value === undefined) {
         throw Error(errorMsg);
     }
-}
-
-export interface Logger {
-    debug: (message: string, meta?: object) => void;
-    info: (message: string, meta?: object) => void;
-    error: (message: string, error: any, meta?: object) => void;
 }
 
 const toBinary = (string: string) => {
@@ -31,26 +24,6 @@ const toBinary = (string: string) => {
 export const toBase64 = (input: string) => btoa(toBinary(input));
 
 export const stringToHashKey = (input: string) => toBase64(SparkMD5.hash(input).toString()).slice(0, 15);
-
-export class SchemaValidator {
-    private ajv: Ajv;
-    private readonly cache: Record<string, ValidateFunction>;
-
-    constructor() {
-        this.ajv = new Ajv();
-        this.cache = {};
-    }
-
-    getValidator<T>(schema: JSONSchemaType<T>): ValidateFunction<T> {
-        const schemaKey = stringToHashKey(JSON.stringify(schema));
-
-        if (!this.cache[schemaKey]) {
-            this.cache[schemaKey] = this.ajv.compile(schema);
-        }
-
-        return this.cache[schemaKey] as ValidateFunction<T>;
-    }
-}
 
 export const delayedPromise = <T>(delayMS: number, action: () => Promise<T>): Promise<T> =>
     new Promise<T>((resolve, reject) => {

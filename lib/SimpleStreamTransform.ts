@@ -1,6 +1,6 @@
 import {Transform, TransformCallback} from "stream";
 
-export class StreamTransform<IN, OUT> extends Transform {
+export class SimpleStreamTransform<IN, OUT> extends Transform {
     private transformer: (input: IN) => OUT;
 
     constructor(transformer: (input: IN) => OUT) {

@@ -1,6 +1,6 @@
-
-import {Logging} from "./Logging";
 import {Transform, TransformCallback} from "stream";
+
+import {Logger} from "./Logger";
 
 export type ThrottledTransformOptions = {
     name: string;
@@ -11,9 +11,6 @@ export type ThrottledTransformOptions = {
 
 export type WriteTo = <T>(itemsOrError: T[] | Error) => Promise<void>;
 
-const logger = new Logging('ThrottledTransform');
-const enableDebugLog = process.env.NODE_ENV === 'test';
-
 export class ThrottledTransform<T> extends Transform {
 
     private queue: T[];
@@ -21,23 +18,25 @@ export class ThrottledTransform<T> extends Transform {
     private flushDebounceTimer: NodeJS.Timeout | null = null;
     private maxTimeoutTimer: NodeJS.Timeout | null = null;
     private writeTo?: (itemsOrError: T[] | Error) => Promise<void>;
+    private logger?: Logger;
 
-    constructor(options: ThrottledTransformOptions, writeTo?: WriteTo) {
+    constructor(options: ThrottledTransformOptions, logger?: Logger, writeTo?: WriteTo) {
         super({objectMode: true});
+        this.logger = logger;
         this.writeTo = writeTo;
         this.queue = [];
         this.options = options;
     }
 
     _transform(chunk: T, encoding: string, callback: TransformCallback) {
-        logger.debug('_transform called', {name: this.options.name}, enableDebugLog);
+        this.logger?.debug('_transform called', {name: this.options.name});
         this.queue.push(chunk);
 
         if (this.queue.length >= this.options.windowSize) {
             this.flushQueue('windowSize');
         } else {
             if (!this.flushDebounceTimer) {
-                logger.debug(`_transform setting debounce t=${this.options.flushDebounceTimeMs}`, {name: this.options.name}, enableDebugLog);
+                this.logger?.debug(`_transform setting debounce t=${this.options.flushDebounceTimeMs}`, {name: this.options.name});
                 this.flushDebounceTimer = setTimeout(() => this.flushQueue('flushDebounceTime'), this.options.flushDebounceTimeMs);
             }
 
@@ -48,7 +47,7 @@ export class ThrottledTransform<T> extends Transform {
     }
 
     _flush(callback: Function) {
-        logger.debug('_flush called', {name: this.options.name}, enableDebugLog);
+        this.logger?.debug('_flush called', {name: this.options.name});
         if (this.queue.length > 0) {
             this.flushQueue('_flush');
         }
@@ -73,18 +72,18 @@ export class ThrottledTransform<T> extends Transform {
     }
 
     private flushQueue(reason: 'windowSize' | 'flushDebounceTime' | '_flush' | 'maxTimeout', forceEnd = false, errorMessage?: string) {
-        logger.debug(`flushQueue called. reason=[${reason}]`, {
+        this.logger?.debug(`flushQueue called. reason=[${reason}]`, {
             name: this.options.name,
             forceEnd,
             errorMessage
-        }, enableDebugLog);
+        });
         this.cleanDebounceTimer();
         if (this.queue.length > 0) {
             // Replace writeToDatabase with your actual function to write to the database
             this.push(this.queue.slice())
             this.writeTo?.(this.queue.slice())
                 .catch(e => {
-                    logger.error('error writing to destination', e, {writerName: this.options.name});
+                    this.logger?.error('error writing to destination', e, {writerName: this.options.name});
                     this.emit('error', new Error('error writing to destination'));
                 });
 
@@ -93,7 +92,7 @@ export class ThrottledTransform<T> extends Transform {
 
         if (forceEnd) {
             if (errorMessage) {
-                logger.debug('emitting error', {name: this.options.name, forceEnd, errorMessage}, enableDebugLog);
+                this.logger?.debug('emitting error', {name: this.options.name, forceEnd, errorMessage});
                 this.emit('error', new Error(errorMessage));
             } else {
                 this.emit('end');
@@ -102,7 +101,7 @@ export class ThrottledTransform<T> extends Transform {
     }
 
     _final(callback: (error?: (Error | null)) => void) {
-        logger.debug('final called', {name: this.options.name}, enableDebugLog);
+        this.logger?.debug('final called', {name: this.options.name});
         this.cleanMaxTimeout();
         this.cleanDebounceTimer();
         super._final(callback);

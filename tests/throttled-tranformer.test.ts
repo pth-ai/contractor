@@ -1,9 +1,8 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
 import {Readable} from "stream";
 import {expect} from 'chai';
-import {ThrottledTransform, ThrottledTransformOptions, WriteTo} from "../src/util/ThrottleTransform";
 import {waitForCondition} from "./testHelpers";
-import {throwError} from "../../frontend/src/utils/tsUtils";
+import {ThrottledTransform, ThrottledTransformOptions, WriteTo, basicLogger} from "../lib";
 
 const timeTickInitMS = 100;
 
@@ -70,7 +69,7 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes += 1
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         readStream.pipe(throttledTransform);
 
@@ -93,7 +92,7 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes += 1
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         readStream.pipe(throttledTransform);
 
@@ -116,7 +115,7 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes += 1
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         readStream.pipe(throttledTransform);
 
@@ -142,7 +141,7 @@ describe("ThrottledTransform", () => {
             callTimes += 1;
         };
 
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         const data = Array.from({length: 10}, (_, i) => i + 1);
 
@@ -167,7 +166,7 @@ describe("ThrottledTransform", () => {
             callTimes += 1;
         };
 
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         const data = Array.from({length: 3}, (_, i) => i + 1);
 
@@ -195,7 +194,7 @@ describe("ThrottledTransform", () => {
             callTimes += 1;
         };
 
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         const data = Array.from({length: inputSize}, (_, i) => i + 1);
 
@@ -228,7 +227,7 @@ describe("ThrottledTransform", () => {
             callTimes += 1;
         };
 
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
         let isErrorInTTStream = false;
         throttledTransform.on('error', () => isErrorInTTStream = true);
 
@@ -278,11 +277,13 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes === 1
                 // throw error on second write
-                ? throwError('errrr')
+                ? (() => {
+                    throw new Error('errrr')
+                })()
                 : callTimes += 1;
         };
 
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
         let isErrorInTTStream = false;
         throttledTransform.on('error', () => isErrorInTTStream = true);
 
@@ -319,7 +320,7 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes += 1;
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         readStream.pipe(throttledTransform);
 
@@ -351,7 +352,7 @@ describe("ThrottledTransform", () => {
             console.debug(`[writeTo] called with data=${JSON.stringify(x)}`);
             callTimes += 1;
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
         const readStream = createGradualReadableStream(data.slice(), 50, throttledTransform);
         readStream.pipe(throttledTransform);
 
@@ -383,7 +384,7 @@ describe("ThrottledTransform", () => {
         const writeTo: WriteTo = async (x: any) => {
             callTimes += 1;
         };
-        const throttledTransform = new ThrottledTransform(options, writeTo);
+        const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
 
         readStream.pipe(throttledTransform);
 

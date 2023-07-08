@@ -1,7 +1,7 @@
 import {Transform, TransformCallback} from "stream";
 import {Logger} from "./Logger";
 
-export class StreamDebugger extends Transform {
+export class StreamDebuggerTransform extends Transform {
     private name: string;
     private terminateStream: boolean;
     private logger?: Logger;

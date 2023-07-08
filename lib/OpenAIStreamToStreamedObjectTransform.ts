@@ -13,17 +13,17 @@ export interface StreamedObject<T> {
 /**
  * this class transforms a stream of {OpenAIStreamObject} to {StreamedObject<T>>}
  */
-export class ObjectStreamTransform extends Transform {
+export class OpenAIStreamToStreamedObjectTransform extends Transform {
     private jsonStream: string;
     // mapping of object type to validation function
     private readonly validateFunction: ValidateFunction<any> | Map<string, ValidateFunction<any>>;
     // mapping of object type to healpath
     private readonly healPath: string[] | Map<string, string[]>;
-    private logger: Logger;
+    private logger?: Logger;
 
     constructor(validateFunction: ValidateFunction<any> | Map<string, ValidateFunction<any>>,
                 healPath: string[] | Map<string, string[]>,
-                logger: Logger) {
+                logger?: Logger) {
         super({objectMode: true});
         this.validateFunction = validateFunction;
         this.healPath = healPath;
@@ -38,7 +38,7 @@ export class ObjectStreamTransform extends Transform {
             return callback(new Error(`ObjectStreamTransform was expecting array, instead got [${JSON.stringify(incoming)}]`))
         }
         const objectTypeByFunctionName = incoming.at(0)?.functionName;
-        console.log(">>", {js: this.jsonStream, incoming});
+
         this.jsonStream += incoming.map(_ => _.chunk).join('');
         try {
             const healedObject = JSON5.parse(this.jsonStream, undefined, (error, stack, root) => {
@@ -84,7 +84,6 @@ export class ObjectStreamTransform extends Transform {
             }
 
         } catch (_ignore) {
-            this.logger.debug('ignored json parsing error..');
         } finally {
             callback();
         }
