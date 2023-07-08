@@ -1,0 +1,33 @@
+{
+  "name": "contractor",
+  "version": "0.5.1",
+  "description": "OpenAI made easy",
+  "repository": "git@github.com:pth-ai/contractor.git",
+  "author": "Roman Landenband",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --outDir dist/",
+    "test": "NODE_ENV=test mocha --exit"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.7",
+    "ajv": "^8.12.0",
+    "openai": "^3.3.0",
+    "spark-md5": "^3.0.2"
+  },
+  "devDependencies": {
+    "@sinonjs/fake-timers": "^10.3.0",
+    "@tsconfig/node18": "^18.2.0",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.15.13",
+    "@types/sinonjs__fake-timers": "^8.1.2",
+    "@types/spark-md5": "^3.0.2",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}

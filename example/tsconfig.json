@@ -1,0 +1,25 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "target": "es6",
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "allowJs": true,
+    "strictNullChecks": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "lib": [
+      "DOM"
+    ]
+  },
+  "exclude": [
+    "dist",
+    "node_modules",
+    "example",
+    "tests"
+  ]
+}
