@@ -245,7 +245,8 @@ export class Contractor<MetaData extends MetaDataType> {
             top_p: 1,
             max_tokens: responseSize,
             functions,
-            ...requestOverrides
+            ...requestOverrides,
+            function_call: 'auto',
         };
 
         let readContent = ""
@@ -373,17 +374,17 @@ export class Contractor<MetaData extends MetaDataType> {
     }
 
     public singleFunction = async <T>(systemMessage: string,
-                                                messages: RequestMessageFormat[],
-                                                model: GPTModelsAlias = 'gpt3',
-                                                gptFunction: {
-                                                    name: string,
-                                                    description: string;
-                                                    parameters: JSONSchemaType<T>
-                                                },
-                                                logMetaData?: MetaData,
-                                                requestOverrides?: Partial<CreateChatCompletionRequest>,
-                                                responseSize: number = 2000,
-                                                maxTokens: number = this.maxTokensPerRequest,): Promise<T | undefined> => {
+                                      messages: RequestMessageFormat[],
+                                      model: GPTModelsAlias = 'gpt3',
+                                      gptFunction: {
+                                          name: string,
+                                          description: string;
+                                          parameters: JSONSchemaType<T>
+                                      },
+                                      logMetaData?: MetaData,
+                                      requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                      responseSize: number = 2000,
+                                      maxTokens: number = this.maxTokensPerRequest,): Promise<T | undefined> => {
 
         const {
             openAIModel,
@@ -404,7 +405,8 @@ export class Contractor<MetaData extends MetaDataType> {
             top_p: 1,
             max_tokens: responseSize,
             functions: [gptFunction],
-            ...requestOverrides
+            ...requestOverrides,
+            function_call: {name: gptFunction.name}
         };
 
         let result: CreateChatCompletionResponse | undefined = undefined;
