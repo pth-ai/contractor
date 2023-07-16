@@ -244,11 +244,10 @@ export class Contractor<MetaData extends MetaDataType> {
             temperature: 0,
             top_p: 1,
             max_tokens: responseSize,
-            functions,
             ...requestOverrides,
-            function_call: 'auto',
+            functions: (functions?.length ?? 0) > 0 ? functions : undefined,
+            function_call: (functions?.length ?? 0) > 1 ? 'auto' : undefined,
         };
-
         let readContent = ""
         let streamingFunctionName: string | undefined = undefined;
         let createResponse: CreateChatCompletionResponse | undefined = undefined;

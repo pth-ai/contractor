@@ -51,7 +51,7 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                         // if healpath not provided for this type just return what ever works (if validation passes)
                         _healPath = this.healPath.get(rootType) ?? [];
                     } else {
-                        callback(new Error(`object type not mapped [${rootType}]`))
+                        return callback(new Error(`object type not mapped [${rootType}]`))
                     }
                 }
                 if (error.message.includes('invalid end of input') && stack.length > _healPath.length) {
