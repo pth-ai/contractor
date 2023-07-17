@@ -1,5 +1,9 @@
 import {CreateChatCompletionRequest} from "openai/api";
-import {ChatCompletionRequestMessage, CreateChatCompletionResponse} from "openai";
+import {
+    ChatCompletionRequestMessage,
+    CreateChatCompletionResponse,
+    CreateChatCompletionResponseChoicesInner,
+} from "openai";
 import {IncomingMessage} from "http";
 import {pipeline} from "stream";
 import ReadableStream = NodeJS.ReadableStream;
@@ -209,6 +213,77 @@ export class Contractor<MetaData extends MetaDataType> {
                     this.logger?.error('error while processing stream interim results', err, logMetaData);
                 }
             })
+    }
+
+    async makeBlockingRequest(systemMessage: string,
+                              messages: RequestMessageFormat[],
+                              model: GPTModelsAlias,
+                              actionName: string,
+                              responseSize: number = 800,
+                              logMetaData?: MetaData,
+                              requestOverrides?: Partial<CreateChatCompletionRequest>,
+                              maxTokens: number = this.maxTokensPerRequest): Promise<CreateChatCompletionResponseChoicesInner | undefined> {
+        const {
+            openAIModel,
+            promptSize
+        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
+
+        await this.moderateLastMessage(messages);
+
+        this.logger?.info(`performing blocking request [${actionName}]`, logMetaData);
+
+        const request: CreateChatCompletionRequest = {
+            model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
+            messages: [
+                {role: 'system', content: systemMessage},
+                ...messages,
+            ],
+            temperature: 0,
+            top_p: 1,
+            max_tokens: responseSize,
+            ...requestOverrides,
+        };
+
+        let result: CreateChatCompletionResponse | undefined = undefined;
+
+        try {
+
+            result = (await this.openAIApi.createChatCompletion(request)).data;
+
+            const resultChoice = result.choices[0];
+
+            await this.auditor?.auditRequest({
+                request,
+                resultRaw: result,
+                result: {data: {content: resultChoice}},
+                requestType: actionName,
+                requestSig: '',
+                metaData: logMetaData,
+            });
+
+            return resultChoice;
+
+        } catch (err: any) {
+            this.logger?.error(`error performing [${actionName}]`, err);
+
+            await this.auditor?.auditRequest({
+                request,
+                resultRaw: result,
+                result: {
+                    error: {
+                        message: err.message,
+                        details: err.toString(),
+                        receivedMessage: JSON.stringify(result?.choices[0]?.message)
+                    }
+                },
+                requestType: actionName,
+                requestSig: "",
+                metaData: logMetaData,
+            });
+
+            throw new Error("error generating search input for research task");
+        }
+
     }
 
     // TODO: create tests for functions and wihtout functions
