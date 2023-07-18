@@ -1,6 +1,12 @@
 import {AxiosPromise, AxiosRequestConfig} from "axios";
 import {CreateChatCompletionRequest, CreateCompletionRequest} from "openai/api";
-import {CreateChatCompletionResponse, CreateCompletionResponse, OpenAIApi} from "openai";
+import {
+    CreateChatCompletionResponse,
+    CreateCompletionResponse,
+    CreateEmbeddingRequest,
+    CreateEmbeddingResponse,
+    OpenAIApi
+} from "openai";
 import {retryPromise} from "./utils";
 
 
@@ -14,6 +20,8 @@ export interface IOpenAIClient {
     createStreamingChatCompletion(createChatCompletionRequest: CreateChatCompletionRequest, options?: AxiosRequestConfig):
         AxiosPromise<CreateChatCompletionResponse>;
 
+    performEmbedding(createEmbeddingRequest: CreateEmbeddingRequest, options?: AxiosRequestConfig): AxiosPromise<CreateEmbeddingResponse>;
+
     performModeration(userRequest: string): Promise<IsFlagged>;
 
 }
@@ -25,6 +33,10 @@ export class OpenAIClient implements IOpenAIClient {
 
     constructor(openAIApi: OpenAIApi) {
         this.openAIApi = openAIApi;
+    }
+
+    performEmbedding(createEmbeddingRequest: CreateEmbeddingRequest, options?: AxiosRequestConfig): AxiosPromise<CreateEmbeddingResponse> {
+        return this.openAIApi.createEmbedding(createEmbeddingRequest, options) as any;
     }
 
     performModeration(userRequest: string): Promise<IsFlagged> {

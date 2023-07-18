@@ -1,10 +1,10 @@
-import {CreateChatCompletionResponse} from "openai";
+import {CreateChatCompletionResponse, CreateEmbeddingRequest, CreateEmbeddingResponse} from "openai";
 import {CreateChatCompletionRequest} from "openai/api";
 
 export type AuditRecord<MetaData> = {
-    resultRaw: CreateChatCompletionResponse | undefined;
+    resultRaw: CreateChatCompletionResponse | CreateEmbeddingResponse | undefined;
     result: { data: { content: any } } | { error: { message: string, details: any, receivedMessage?: string } };
-    request: CreateChatCompletionRequest;
+    request: CreateChatCompletionRequest | CreateEmbeddingRequest;
     requestType: string;
     requestSig: string;
     metaData?: MetaData;

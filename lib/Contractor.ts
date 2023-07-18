@@ -2,7 +2,7 @@ import {CreateChatCompletionRequest} from "openai/api";
 import {
     ChatCompletionRequestMessage,
     CreateChatCompletionResponse,
-    CreateChatCompletionResponseChoicesInner,
+    CreateChatCompletionResponseChoicesInner, CreateEmbeddingRequest,
 } from "openai";
 import {IncomingMessage} from "http";
 import {pipeline} from "stream";
@@ -20,6 +20,7 @@ import {SchemaValidationCache} from "./SchemaValidationCache";
 import {ThrottledTransform} from "./ThrottleTransform";
 import {OpenAIStreamToStreamedObjectTransform} from "./OpenAIStreamToStreamedObjectTransform";
 import {StreamMITMTransform} from "./StreamMITMTransform";
+import * as JSON5 from "./json5";
 
 
 type MetaDataType = { [k: string]: string };
@@ -490,7 +491,19 @@ export class Contractor<MetaData extends MetaDataType> {
             result = (await this.openAIApi.createChatCompletion(request)).data;
 
             const validatedResult = truthy(result.choices[0]?.message?.function_call?.arguments, funcArgs => {
-                const json = JSON.parse(funcArgs);
+                const json = JSON5.parse(funcArgs, undefined, (error, stack, root) => {
+                    if (error.message.includes('invalid end of input')) {
+                        const validator = this.schemaValidationCache.getValidator(gptFunction.parameters);
+                        if (validator(root)) {
+                            // we did what we could.. object looks good enough..
+                            return root;
+                        } else {
+                            console.log(root, validator.errors);
+                            throw new Error(`function arguments did not pass validation [${JSON.stringify(validator.errors)}]`);
+                        }
+                    }
+
+                });
                 const validator = this.schemaValidationCache.getValidator(gptFunction.parameters);
                 if (validator(json)) {
                     return json
@@ -531,6 +544,25 @@ export class Contractor<MetaData extends MetaDataType> {
             throw new Error("error generating search input for research task");
         }
 
+    }
+
+    public performEmbedding = async (inputContent: string, userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
+        const createEmbeddingRequest: CreateEmbeddingRequest = {
+            input: inputContent,
+            model,
+            user: userId
+        };
+        const result = await this.openAIApi.performEmbedding(createEmbeddingRequest);
+        await this.auditor?.auditRequest({
+            request: createEmbeddingRequest,
+            resultRaw: result.data,
+            result: {data: {content: result.data.data[0]}},
+            requestType: 'embedding',
+            requestSig: logMetaData?.['requestSig'] as string,
+            metaData: logMetaData,
+        });
+
+        return result.data.data[0]?.embedding;
     }
 
 
