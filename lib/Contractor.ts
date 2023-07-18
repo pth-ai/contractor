@@ -438,7 +438,7 @@ export class Contractor<MetaData extends MetaDataType> {
     public async performModeration(input: string): Promise<void> {
         const isFlagged = await this.openAIApi.performModeration(input);
         if (isFlagged) {
-            throw new Error('request flagged due to moderation');
+            throw new Error(`request flagged due to moderation. input: [${input.slice(0, 200)}]`);
         }
     }
 
