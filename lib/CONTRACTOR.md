@@ -26,3 +26,57 @@ function generateInterface(n) {
 
 console.log(generateInterface(10));
 ```
+
+```typescript
+function generateInterface(n) {
+    let result = "";
+
+    for (let i = 1; i <= n; i++) {
+        const types = Array.from({length: i}, (_, k) => 'T' + (k + 1)).join(', ');
+        const names = Array.from({length: i}, (_, k) => 'N' + (k + 1) + ' extends string').join(', ');
+        const functions = Array.from({length: i}, (_, k) => `ChatCompletionFunctionsWithTypes<T${k + 1}, N${k + 1}>`).join(', ');
+        const results = Array.from({length: i}, (_, k) => `Result<T${k + 1}, N${k + 1}>`).join(' | ');
+        
+        result += `makeBlockingRequestWithFunctions<${types}, ${names}>(systemMessage: string,
+                                           messages: RequestMessageFormat[],
+                                           model: GPTModelsAlias,
+                                           actionName: string,
+                                           functions: [${functions}],
+                                           responseSize?: number,
+                                           logMetaData?: MetaData,
+                                           requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                           maxTokens?: number): Promise<${results} | undefined>;\n\n`;
+    }
+
+    return result;
+}
+
+console.log(generateInterface(10));
+```
+
+```typescript
+function generateInterface(n) {
+    let result = "";
+
+    for (let i = 1; i <= n; i++) {
+        const types = Array.from({length: i}, (_, k) => 'T' + (k + 1)).join(', ');
+        const names = Array.from({length: i}, (_, k) => 'N' + (k + 1) + ' extends string').join(', ');
+        const functions = Array.from({length: i}, (_, k) => `ChatCompletionFunctionsWithTypes2<T${k + 1}, N${k + 1}>`).join(', ');
+        const results = Array.from({length: i}, (_, k) => `Result2<T${k + 1}, N${k + 1}>`).join(' | ');
+        
+        result += `makeBlockingRequestWithFunctionsAlt<${types}, ${names}>(systemMessage: string,
+                                           messages: RequestMessageFormat[],
+                                           model: GPTModelsAlias,
+                                           actionName: string,
+                                           functions: [${functions}],
+                                           responseSize?: number,
+                                           logMetaData?: MetaData,
+                                           requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                           maxTokens?: number): Promise<${results} | undefined>;\n\n`;
+    }
+
+    return result;
+}
+
+console.log(generateInterface(5));
+```
