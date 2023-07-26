@@ -1,9 +1,14 @@
 import {CreateChatCompletionRequest} from "openai/api";
-import {ChatCompletionRequestMessage, CreateChatCompletionResponse, CreateEmbeddingRequest,} from "openai";
+import {
+    ChatCompletionRequestMessage,
+    CreateChatCompletionResponse,
+    CreateEmbeddingRequest,
+    CreateEmbeddingRequestInput,
+} from "openai";
 import {IncomingMessage} from "http";
 import {pipeline} from "stream";
 import {JSONSchemaType} from "ajv";
-import {countTokens, getModelForAlias, GPTModelsAlias, largeModel} from "./gptUtils";
+import {countTokens, getModelForAlias, GPTModelsAlias, largeModel, truncateInput} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
 import {IOpenAIClient} from "./OpenAIClient";
 import {IAuditor} from "./IAuditor";
@@ -504,6 +509,68 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
+    async makeBlockingRequest(systemMessage: string,
+                              messages: RequestMessageFormat[],
+                              model: GPTModelsAlias,
+                              actionName: string,
+                              responseSize: number = 800,
+                              logMetaData?: MetaData,
+                              requestOverrides?: Partial<CreateChatCompletionRequest>,
+                              maxTokens: number = this.maxTokensPerRequest): Promise<string> {
+        const {
+            openAIModel,
+            promptSize
+        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
+
+        await this.moderateLastMessage(messages);
+        const oaiModel = promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel;
+        this.logger?.debug(`performing blocking request [${actionName}]`, logMetaData);
+        const tokensForRequest = maxTokens - (promptSize + responseSize);
+        const truncatedMessages = messages.reduce((out, message) => {
+            const totalUsedSoFar = countTokens(out.map(_ => _.content).join(' '), oaiModel, this.logger);
+            const truncagtedMessage = {
+                ...message, content: truncateInput(message.content, model,
+                    tokensForRequest, this.logger)
+            } as RequestMessageFormat;
+            return [...out, message];
+        }, [] as RequestMessageFormat[])
+        const request: CreateChatCompletionRequest = {
+            model: oaiModel,
+            messages: [
+                {role: 'system', content: systemMessage},
+                ...truncatedMessages,
+            ],
+            temperature: 0,
+            top_p: 1,
+            max_tokens: responseSize,
+            ...requestOverrides,
+        };
+
+        let result: CreateChatCompletionResponse | undefined = undefined;
+
+        try {
+
+            result = (await this.openAIApi.createChatCompletion(request)).data;
+
+            const responseStr = result.choices[0]?.message?.content;
+            assertIsDefined(responseStr, 'response content not generated');
+
+            await this.recordAudit(systemMessage, messages, openAIModel, responseStr, request, result,
+                actionName, undefined, logMetaData);
+
+            return responseStr;
+
+        } catch (err: any) {
+            this.logger?.error(`error performing [${actionName}]`, err);
+
+            await this.recordAudit(systemMessage, messages, openAIModel, "", request,
+                result, undefined, err, logMetaData);
+
+            throw new Error(`error performing blocking request [${actionName}]`);
+        }
+
+    }
+
 
     // TODO: create tests for functions and wihtout functions
     async makeStreamingRequest(systemMessage: string,
@@ -653,7 +720,7 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    public performEmbedding = async (inputContent: string, userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
+    public performEmbedding = async (inputContent: CreateEmbeddingRequestInput, userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
         const createEmbeddingRequest: CreateEmbeddingRequest = {
             input: inputContent,
             model,
@@ -665,7 +732,7 @@ export class Contractor<MetaData extends MetaDataType> {
             resultRaw: result.data,
             result: {data: {content: result.data.data[0]}},
             requestType: 'embedding',
-            requestSig: logMetaData?.['requestSig'] as string,
+            requestSig: logMetaData?.['requestSig'] ?? '-',
             metaData: logMetaData,
         });
 

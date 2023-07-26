@@ -36,7 +36,7 @@ export class OpenAIClient implements IOpenAIClient {
     }
 
     performEmbedding(createEmbeddingRequest: CreateEmbeddingRequest, options?: AxiosRequestConfig): AxiosPromise<CreateEmbeddingResponse> {
-        return this.openAIApi.createEmbedding(createEmbeddingRequest, options) as any;
+        return retryPromise('createChatCompletion', () => this.openAIApi.createEmbedding(createEmbeddingRequest, options) as any, 3) as any;
     }
 
     performModeration(userRequest: string): Promise<IsFlagged> {
