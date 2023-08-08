@@ -53,4 +53,36 @@ export function truncateInput(input: string,
 
 }
 
+type Vector = number[];
 
+/**
+ * Combine two vectors by applying weights and adding them together.
+ *
+ * @param {Vector} v1 - The first vector to combine. This is typically the category embedding vector.
+ * @param {Vector} v2 - The second vector to combine. This is typically the keyword embedding vector.
+ * @param {number} w1 - The weight to apply to the first vector (v1). This must be between 0 and 1.
+ *
+ * @returns {Vector} The combined vector.
+ *
+ * @throws {Error} If the two vectors have different lengths.
+ *
+ * @typedef {number[]} Vector - A vector is represented as an array of numbers.
+ *
+ * This function takes two vectors and a weight for the first vector, and combines them into a single vector.
+ * The vectors should be the same length, and they should typically be embedding vectors produced by a machine learning model.
+ * The weight for the second vector is implicitly set to be (1 - w1), so the weights for the two vectors always add up to 1.
+ */
+export function combineVectors(v1: Vector, v2: Vector, w1: number): Vector {
+    if (v1.length !== v2.length) {
+        throw new Error("Vectors must be the same length");
+    }
+
+    const w2 = 1 - w1;
+    const result: Vector = [];
+
+    for (let i = 0; i < v1.length; i++) {
+        result.push(w1 * v1[i] + w2 * v2[i]);
+    }
+
+    return result;
+}

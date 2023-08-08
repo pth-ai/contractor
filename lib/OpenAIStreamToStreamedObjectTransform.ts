@@ -1,7 +1,7 @@
 import {Transform, TransformCallback} from "stream";
 import {ValidateFunction} from "ajv";
 import {OpenAIStreamObject} from "./OpenAIStreamTransform";
-import {assertIsDefined} from "./utils";
+import {assertIsDefined, truthy} from "./utils";
 import * as JSON5 from './json5';
 import {Logger} from "./Logger";
 
@@ -20,6 +20,7 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
     // mapping of object type to healpath
     private readonly healPath: string[] | Map<string, string[]>;
     private logger?: Logger;
+    private objectTypeByFunctionName?: string;
 
     constructor(validateFunction: ValidateFunction<any> | Map<string, ValidateFunction<any>>,
                 healPath: string[] | Map<string, string[]>,
@@ -37,7 +38,8 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
         if (!Array.isArray(incoming)) {
             return callback(new Error(`ObjectStreamTransform was expecting array, instead got [${JSON.stringify(incoming)}]`))
         }
-        const objectTypeByFunctionName = incoming.at(0)?.functionName;
+
+        truthy(incoming.at(0)?.functionName, _ => this.objectTypeByFunctionName = _);
 
         this.jsonStream += incoming.map(_ => _.chunk).join('');
         try {
@@ -46,46 +48,55 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                 if (Array.isArray(this.healPath)) {
                     _healPath = this.healPath;
                 } else {
-                    const rootType = objectTypeByFunctionName || (root.hasOwnProperty('type') ? root.type as string : undefined);
-                    if (rootType) {
+                    this.objectTypeByFunctionName = this.objectTypeByFunctionName || (root.hasOwnProperty('type') ? root.type as string : undefined);
+
+                    if (this.objectTypeByFunctionName) {
                         // if healpath not provided for this type just return what ever works (if validation passes)
-                        _healPath = this.healPath.get(rootType) ?? [];
-                    } else {
-                        return callback(new Error(`object type not mapped [${rootType}]`))
+                        _healPath = this.healPath.get(this.objectTypeByFunctionName) ?? [];
+                    } else if (!!this.objectTypeByFunctionName) {
+                        this.logger?.error(`warning: object type not mapped [${this.objectTypeByFunctionName}]`, error);
                     }
                 }
+
                 if (error.message.includes('invalid end of input') && stack.length > _healPath.length) {
                     const healKey = _healPath.at(-1);
-                    assertIsDefined(healKey);
-                    const healStackPath = stack[_healPath.length - 1]
-                    if (healStackPath.hasOwnProperty(healKey)) {
-                        if (healStackPath[healKey] === stack[_healPath.length]) {
-                            if (Array.isArray(healStackPath[healKey])) {
-                                healStackPath[healKey].pop()
+                    if (healKey) {
+                        assertIsDefined(healKey);
+                        const healStackPath = stack[_healPath.length - 1]
+                        if (healStackPath.hasOwnProperty(healKey)) {
+                            if (healStackPath[healKey] === stack[_healPath.length]) {
+                                if (Array.isArray(healStackPath[healKey])) {
+                                    healStackPath[healKey].pop()
+                                }
                             }
                         }
+                        return root
                     }
-                    return root
                 }
             });
             const validationFunction = (this.validateFunction instanceof Map
-                ? (objectTypeByFunctionName ? this.validateFunction.get(objectTypeByFunctionName) : undefined)
+                ? (this.objectTypeByFunctionName ? this.validateFunction.get(this.objectTypeByFunctionName) : undefined)
                 : this.validateFunction)
             if (!validationFunction) {
-                return callback(new Error(`did not find suitable validation function [${objectTypeByFunctionName}]`))
+                return callback(new Error(`did not find suitable validation function [${this.objectTypeByFunctionName}]`))
             } else {
                 const validated = validationFunction(healedObject);
                 if (validated) {
                     this.push(JSON.stringify({
-                        functionName: objectTypeByFunctionName,
+                        functionName: this.objectTypeByFunctionName,
                         stream: healedObject,
                     }) + '\n');
                 }
             }
-
-        } catch (_ignore) {
-        } finally {
             callback();
+        } catch (err: any) {
+            if (err.message?.includes('invalid end of input')) {
+                // ignore while streaming...
+                callback();
+            } else {
+                this.logger?.error('error caught', err);
+                callback(new Error('caught error:' + err.message));
+            }
         }
     }
 }

@@ -54,7 +54,7 @@ export type Result<T, N extends string> = {
 
 export const defaultStreamDelimiterSeparator = '|{-*-}|';
 
-export class Contractor<MetaData extends MetaDataType> {
+export class Contractor<MetaData extends Partial<MetaDataType>> {
     private readonly openAIApi: IOpenAIClient;
     private readonly auditor?: IAuditor<MetaData>;
     private readonly logger?: Logger;
@@ -606,8 +606,6 @@ export class Contractor<MetaData extends MetaDataType> {
             top_p: 1,
             max_tokens: responseSize,
             ...requestOverrides,
-            functions: (functions?.length ?? 0) > 0 ? functions : undefined,
-            function_call: (functions?.length ?? 0) > 1 ? 'auto' : undefined,
         };
         let readContent = ""
         let streamingFunctionName: string | undefined = undefined;
