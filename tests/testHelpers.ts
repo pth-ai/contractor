@@ -26,7 +26,6 @@ export const TestWorkspaces = {
 }
 
 
-
 export const setSystemTime = (clock: InstalledClock, date: Date) => {
     console.info(`setting system time.. new: [${date.toString()}] old [${new Date().toString()}]`);
     clock.setSystemTime(date);
@@ -54,4 +53,12 @@ export class SplitStreamLines extends Transform {
     }
 }
 
+export function reduceAndTrim(input: string): string {
+    // Remove trailing spaces from each line
+    let trimmedLines = input.split('\n')
+        .filter(_ => !!_.trim())
+        .map(line => line.trim().replace(/\s+$/, ''));
 
+    // Reduce consecutive characters and join the lines back
+    return trimmedLines.map(line => line.replace(/\s{2,}/g, ' ')).join('\n');
+}

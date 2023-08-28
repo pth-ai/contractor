@@ -24,7 +24,9 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
 
     constructor(validateFunction: ValidateFunction<any> | Map<string, ValidateFunction<any>>,
                 healPath: string[] | Map<string, string[]>,
-                logger?: Logger) {
+                logger?: Logger,
+                private typeValueAttribute: string = "type",
+                private validatoinValueAttribute?: string) {
         super({objectMode: true});
         this.validateFunction = validateFunction;
         this.healPath = healPath;
@@ -48,7 +50,8 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                 if (Array.isArray(this.healPath)) {
                     _healPath = this.healPath;
                 } else {
-                    this.objectTypeByFunctionName = this.objectTypeByFunctionName || (root.hasOwnProperty('type') ? root.type as string : undefined);
+                    this.objectTypeByFunctionName = this.objectTypeByFunctionName
+                        || (root?.hasOwnProperty(this.typeValueAttribute) ? root[this.typeValueAttribute] as string : undefined);
 
                     if (this.objectTypeByFunctionName) {
                         // if healpath not provided for this type just return what ever works (if validation passes)
@@ -63,7 +66,7 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                     if (healKey) {
                         assertIsDefined(healKey);
                         const healStackPath = stack[_healPath.length - 1]
-                        if (healStackPath.hasOwnProperty(healKey)) {
+                        if (healStackPath?.hasOwnProperty(healKey)) {
                             if (healStackPath[healKey] === stack[_healPath.length]) {
                                 if (Array.isArray(healStackPath[healKey])) {
                                     healStackPath[healKey].pop()
@@ -80,7 +83,11 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
             if (!validationFunction) {
                 return callback(new Error(`did not find suitable validation function [${this.objectTypeByFunctionName}]`))
             } else {
-                const validated = validationFunction(healedObject);
+                const validated = validationFunction(
+                    this.validatoinValueAttribute
+                        ? healedObject[this.validatoinValueAttribute]
+                        : healedObject);
+
                 if (validated) {
                     this.push(JSON.stringify({
                         functionName: this.objectTypeByFunctionName,

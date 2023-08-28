@@ -22,6 +22,7 @@ import {OpenAIStreamToStreamedObjectTransform} from "./OpenAIStreamToStreamedObj
 import {StreamMITMTransform} from "./StreamMITMTransform";
 import * as JSON5 from "./json5";
 import ReadableStream = NodeJS.ReadableStream;
+import {SchemaToTypescript} from "./SchemaToTypescript";
 
 
 type MetaDataType = { [k: string]: string };
@@ -55,20 +56,18 @@ export type Result<T, N extends string> = {
 export const defaultStreamDelimiterSeparator = '|{-*-}|';
 
 export class Contractor<MetaData extends Partial<MetaDataType>> {
-    private readonly openAIApi: IOpenAIClient;
-    private readonly auditor?: IAuditor<MetaData>;
-    private readonly logger?: Logger;
+
+
     private readonly schemaValidationCache: SchemaValidationCache;
-    private readonly maxTokensPerRequest: number;
-    private readonly streamObjectSeparator: string;
 
 
-    constructor(openAIApi: IOpenAIClient, auditor?: IAuditor<MetaData>, maxTokensPerRequest: number = 8000, streamObjectSeparator: string = defaultStreamDelimiterSeparator, logger?: Logger) {
-        this.openAIApi = openAIApi;
-        this.auditor = auditor;
-        this.maxTokensPerRequest = maxTokensPerRequest;
-        this.streamObjectSeparator = streamObjectSeparator;
-        this.logger = logger;
+    constructor(private openAIApi: IOpenAIClient,
+                private functionsMessagePlaceHolder: string,
+                private auditor?: IAuditor<MetaData>,
+                private maxTokensPerRequest: number = 8000,
+                private streamObjectSeparator: string = defaultStreamDelimiterSeparator,
+                private logger?: Logger) {
+
         this.schemaValidationCache = new SchemaValidationCache();
     }
 
@@ -183,7 +182,14 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                    requestOverrides?: Partial<CreateChatCompletionRequest>,
                                    maxTokens: number = this.maxTokensPerRequest): Promise<NodeJS.ReadableStream | undefined> {
 
-        const stream = await this.makeStreamingRequest(systemMessage, messages, model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
+
+        const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
+
+        const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
+
+        const stream = await this.makeStreamingRequest(
+            systemMessage.replace(regexp, responseFormatGen),
+            messages, model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
 
         if (!stream) {
             return undefined;
@@ -206,7 +212,10 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         const objectTransform = new OpenAIStreamToStreamedObjectTransform(
             validators,
             new Map(functions.filter(_ => !!_.partialStreamPath)
-                .map(_ => [_.name as string, _.partialStreamPath!])), this.logger)
+                .map(_ => [_.name as string, ['value', ...(_.partialStreamPath ?? [])]])),
+            this.logger,
+            'name',
+            'value')
         const objectStreamTransformer = new StreamMITMTransform<any, any>(async (input, functionName) => {
             if (!functionName) {
                 throw new Error('action did not result in a function, try to ask for specific function or direct AI to answer by using any of the available functions');
@@ -215,7 +224,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             return await transformObjectStream({
                 name: functionName,
                 entry: functions.find(_ => _.name === functionName)!,
-                value: input,
+                value: input.value,
             })
         }, this.streamObjectSeparator)
 
@@ -397,7 +406,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                messages: RequestMessageFormat[],
                                                                model: GPTModelsAlias,
                                                                actionName: string,
-                                                               functions: [ChatCompletionFunctionsWithTypes2<T1, N1>],
+                                                               functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                                responseSize?: number,
                                                                logMetaData?: MetaData,
                                                                requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -407,7 +416,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                       messages: RequestMessageFormat[],
                                                                                       model: GPTModelsAlias,
                                                                                       actionName: string,
-                                                                                      functions: [ChatCompletionFunctionsWithTypes2<T1, N1>, ChatCompletionFunctionsWithTypes2<T2, N2>],
+                                                                                      functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                                       responseSize?: number,
                                                                                       logMetaData?: MetaData,
                                                                                       requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -417,7 +426,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                              messages: RequestMessageFormat[],
                                                                                                              model: GPTModelsAlias,
                                                                                                              actionName: string,
-                                                                                                             functions: [ChatCompletionFunctionsWithTypes2<T1, N1>, ChatCompletionFunctionsWithTypes2<T2, N2>, ChatCompletionFunctionsWithTypes2<T3, N3>],
+                                                                                                             functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                              responseSize?: number,
                                                                                                              logMetaData?: MetaData,
                                                                                                              requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -427,7 +436,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                     messages: RequestMessageFormat[],
                                                                                                                                     model: GPTModelsAlias,
                                                                                                                                     actionName: string,
-                                                                                                                                    functions: [ChatCompletionFunctionsWithTypes2<T1, N1>, ChatCompletionFunctionsWithTypes2<T2, N2>, ChatCompletionFunctionsWithTypes2<T3, N3>, ChatCompletionFunctionsWithTypes2<T4, N4>],
+                                                                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                                     responseSize?: number,
                                                                                                                                     logMetaData?: MetaData,
                                                                                                                                     requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -437,7 +446,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                            messages: RequestMessageFormat[],
                                                                                                                                                            model: GPTModelsAlias,
                                                                                                                                                            actionName: string,
-                                                                                                                                                           functions: [ChatCompletionFunctionsWithTypes2<T1, N1>, ChatCompletionFunctionsWithTypes2<T2, N2>, ChatCompletionFunctionsWithTypes2<T3, N3>, ChatCompletionFunctionsWithTypes2<T4, N4>, ChatCompletionFunctionsWithTypes2<T5, N5>],
+                                                                                                                                                           functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                                            responseSize?: number,
                                                                                                                                                            logMetaData?: MetaData,
                                                                                                                                                            requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -448,7 +457,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                               messages: RequestMessageFormat[],
                                               model: GPTModelsAlias,
                                               actionName: string,
-                                              functions: Array<ChatCompletionFunctionsWithTypes2<any, any>>,
+                                              functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                               responseSize: number = 800,
                                               logMetaData?: MetaData,
                                               requestOverrides?: Partial<CreateChatCompletionRequest>,
@@ -529,10 +538,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         const truncatedMessages = messages.reduce((out, message) => {
             const totalUsedSoFar = countTokens(out.map(_ => _.content).join(' '), oaiModel, this.logger);
             const truncagtedMessage = {
-                ...message, content: truncateInput(message.content, model,
-                    tokensForRequest, this.logger)
+                ...message,
+                content: truncateInput(message.content, model,
+                    tokensForRequest - totalUsedSoFar, this.logger)
             } as RequestMessageFormat;
-            return [...out, message];
+            return [...out, truncagtedMessage];
         }, [] as RequestMessageFormat[])
         const request: CreateChatCompletionRequest = {
             model: oaiModel,
@@ -654,6 +664,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     public getStreamSeparator = () => this.streamObjectSeparator;
 
+    public getFunctionsMessagePlaceHolder = () => this.functionsMessagePlaceHolder;
+
     private async moderateLastMessage(messages: RequestMessageFormat[]) {
         await this.performModeration(messages.slice(-1).map(_ => _.content).join('\n'))
     }
@@ -748,6 +760,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                     } else {
                         throw new Error(`function arguments did not pass validation [${JSON.stringify(validator.errors)}]`);
                     }
+                } else {
+                    return undefined;
                 }
 
             });
@@ -821,15 +835,35 @@ interface Wrapper<N extends string, T> {
     value: T;
 }
 
-export const createResultWrapper = <N extends string, T>(name: N, tSchema: JSONSchemaType<T>): JSONSchemaType<Wrapper<N, T>> => ({
+export const createResultWrapper = <N extends string, T>(name: N, tSchema: JSONSchemaType<T>, description: string = ""): JSONSchemaType<Wrapper<N, T>> => ({
     type: "object",
     additionalProperties: false,
+    description,
     properties: {
         type: {type: "string", const: name},
         value: tSchema,
     },
     required: ['type', 'value'],
 } as unknown as JSONSchemaType<Wrapper<N, T>>);
+
+export const createResultsWrapper = (funcs: ({
+    name: string,
+    parameters: JSONSchemaType<any>,
+    description: string
+})[]): JSONSchemaType<any> => ({
+    $id: 'results-wrapper',
+    title: 'Result',
+    type: "object",
+    additionalProperties: false,
+    oneOf: funcs.map(f => ({
+        type: 'object',
+        description: f.description,
+        properties: {
+            name: {type: 'string', const: f.name},
+            value: f.parameters,
+        },
+    }))
+} as unknown as JSONSchemaType<any>);
 
 
 export type RequestMessageFormat = { role: 'user' | 'assistant', content: string };
