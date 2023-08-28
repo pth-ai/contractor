@@ -43,8 +43,8 @@ describe('SchemaToTypescript', () => {
 
         const expectedTS = `
 interface User {
-    name: string;  // Name of the user
-    age?: number;
+    name: string // Name of the user
+    age?: number
 }
 `;
 
