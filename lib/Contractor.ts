@@ -189,7 +189,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         const stream = await this.makeStreamingRequest(
             systemMessage.replace(regexp, responseFormatGen),
-            messages, model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
+            messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)})),
+            model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
 
         if (!stream) {
             return undefined;
