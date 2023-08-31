@@ -499,19 +499,20 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, 'response content not generated');
             const objJson = JSON5.parse(objStr);
-            const objType = objJson['type'] as string;
+            const objType = objJson['name'] as string;
             assertIsDefined(objType, 'could not resolve object type');
+            const objValueStr = JSON.stringify(objJson['value']);
             const validator = functions.find(_ => _.name === objType);
             assertIsDefined(validator, `could not find func validator for name [${objType}]`)
-            const validatedResult = this.extractFunctionValidatedResult(objStr, validator.parameters);
+            const validatedResult = this.extractFunctionValidatedResult(objValueStr, validator.parameters);
 
-            await this.recordAudit(systemMessage, _messages, openAIModel, objStr, request, result,
+            await this.recordAudit(systemMessage, _messages, openAIModel, objValueStr, request, result,
                 actionName, undefined, logMetaData);
 
             return {
                 name: objType,
                 entry: validator,
-                value: validatedResult?.value,
+                value: validatedResult,
             };
 
         } catch (err: any) {
@@ -785,8 +786,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                         readContent: string, request: CreateChatCompletionRequest, response?: CreateChatCompletionResponse, functionName?: string,
                         err?: Error, logMetaData?: MetaData) {
 
-        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), openAIModel);
-        const completion_tokens = countTokens(readContent, openAIModel);
+        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), openAIModel, this.logger);
+        const completion_tokens = countTokens(readContent, openAIModel, this.logger);
 
         this.auditor?.auditRequest({
             request,
@@ -828,7 +829,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     private measureRequest(model: "gpt3" | "gpt4", systemMessage: string, messages: RequestMessageFormat[], responseSize: number, maxTokens: number) {
         const openAIModel = getModelForAlias(model);
-        const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), openAIModel);
+        const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), openAIModel, this.logger);
         if (promptSize + responseSize > maxTokens) {
             throw new Error("input too large")
         }
