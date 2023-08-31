@@ -472,11 +472,15 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         this.logger?.info(`performing blocking request alt [${actionName}]`, logMetaData);
 
+        const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
+
+        const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
+
         const request: CreateChatCompletionRequest = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
-                {role: 'system', content: systemMessage},
-                ...messages,
+                {role: 'system', content: systemMessage.replace(regexp, responseFormatGen)},
+                ...messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)})),
             ],
             temperature: 0,
             top_p: 1,
