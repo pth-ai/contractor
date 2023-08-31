@@ -463,24 +463,26 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                               logMetaData?: MetaData,
                                               requestOverrides?: Partial<CreateChatCompletionRequest>,
                                               maxTokens: number = this.maxTokensPerRequest): Promise<Result2<any, any>> {
-        const {
-            openAIModel,
-            promptSize
-        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
-
-        await this.moderateLastMessage(messages);
-
-        this.logger?.info(`performing blocking request alt [${actionName}]`, logMetaData);
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
 
         const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
 
+        const _messages = messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)}));
+        const {
+            openAIModel,
+            promptSize
+        } = this.measureRequest(model, systemMessage, _messages, responseSize, maxTokens);
+
+        await this.moderateLastMessage(_messages);
+
+        this.logger?.info(`performing blocking request alt [${actionName}]`, logMetaData);
+
         const request: CreateChatCompletionRequest = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
                 {role: 'system', content: systemMessage.replace(regexp, responseFormatGen)},
-                ...messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)})),
+                ..._messages,
             ],
             temperature: 0,
             top_p: 1,
@@ -503,7 +505,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             assertIsDefined(validator, `could not find func validator for name [${objType}]`)
             const validatedResult = this.extractFunctionValidatedResult(objStr, validator.parameters);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, objStr, request, result,
+            await this.recordAudit(systemMessage, _messages, openAIModel, objStr, request, result,
                 actionName, undefined, logMetaData);
 
             return {
@@ -515,7 +517,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, "", request,
+            await this.recordAudit(systemMessage, _messages, openAIModel, "", request,
                 result, undefined, err, logMetaData);
 
             throw new Error("error performing blocking request with functions alt");
