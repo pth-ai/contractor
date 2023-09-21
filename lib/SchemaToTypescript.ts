@@ -137,7 +137,7 @@ export class SchemaToTypescript {
                 default:
                     // primitives..
                     return (truthy(schema.const, _ => JSON.stringify(_)) ??
-                        truthy(schema.enum, (en: string[]) => en.map(_ => `'${_}'`).join(' | ')) ??
+                        truthy(schema.enum, (en: string[]) => `( ${en.map(_ => `'${_}'`).join(' | ')} )`) ??
                         schema.type ??
                         'any');
             }

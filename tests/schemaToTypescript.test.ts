@@ -122,5 +122,33 @@ interface User {
 
     });
 
+    it('should process array of items that are union type', async () => {
+        const scheduleSchema: JSONSchemaType<{
+            daysOfWeek: ('Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday')[];
+        }> = {
+            $id: 'Schedule',
+            type: "object",
+            title: 'Schedule',
+            properties: {
+                daysOfWeek: {
+                    type: "array",
+                    items: {
+                        type: "string",
+                        enum: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                    },
+                    nullable: false,
+                },
+            },
+            required: ['daysOfWeek'],
+        };
+
+
+        const converter = new SchemaToTypescript(scheduleSchema as JSONSchemaType<any>, "Schedule");
+        const typeStore = converter.getTypeStore();
+
+        expect(typeStore).to.have.property("Schedule");
+
+    });
+
 
 });
