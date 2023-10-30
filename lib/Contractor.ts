@@ -23,6 +23,7 @@ import {StreamMITMTransform} from "./StreamMITMTransform";
 import * as JSON5 from "./json5";
 import ReadableStream = NodeJS.ReadableStream;
 import {SchemaToTypescript} from "./SchemaToTypescript";
+import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 
 
 type MetaDataType = { [k: string]: string };
@@ -232,6 +233,68 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         return pipeline(stream,
             throttler,
             objectTransform,
+            objectStreamTransformer,
+            err => {
+                if (err) {
+                    this.logger?.error('error while processing stream interim results', err, logMetaData);
+                }
+            })
+    }
+
+    public async streamingHealer(systemMessage: string,
+                                 messages: RequestMessageFormat[],
+                                 model: GPTModelsAlias,
+                                 healer: (streamStr: string) => (string | undefined),
+                                 responseSize: number = 800,
+                                 logMetaData?: MetaData,
+                                 requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                 maxTokens: number = this.maxTokensPerRequest,
+                                 manipulateResult?: (input: {
+                                     healedStream: string
+                                 }) => any,
+                                 onSuccessFinished?: () => void): Promise<NodeJS.ReadableStream | undefined> {
+
+        const {
+            openAIModel,
+            promptSize
+        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
+
+        const stream = await this.makeStreamingRequest(
+            systemMessage,
+            messages,
+            model,
+            responseSize,
+            undefined,
+            logMetaData,
+            requestOverrides,
+            maxTokens);
+
+        if (!stream) {
+            return undefined;
+        }
+
+        const throttler = new ThrottledTransform(
+            {
+                name: 'task creation thr',
+                flushDebounceTimeMs: 1000,
+                maxIdleTimeoutMs: 10000,
+                windowSize: 10,
+            },
+        );
+
+        const healedTransform = new OpenAIStreamToStreamedHealedTransform(healer, this.logger)
+
+        const objectStreamTransformer = new StreamMITMTransform<string, unknown>(
+            async (input) => {
+                return manipulateResult ? manipulateResult({healedStream: input}) : {healedStream: manipulateResult};
+            }, this.streamObjectSeparator,
+            onSuccessFinished
+        )
+
+        return pipeline(
+            stream,
+            throttler,
+            healedTransform,
             objectStreamTransformer,
             err => {
                 if (err) {

@@ -4,11 +4,15 @@ import {StreamedObject} from "./OpenAIStreamToStreamedObjectTransform";
 export class StreamMITMTransform<T, OUT> extends Transform {
     private transform: (input: T, functionName?: string) => Promise<OUT>;
     private streamObjectSeparator: string;
+    private onSuccessFinish?: () => void;
 
-    constructor(transform: (input: T, functionName?: string) => Promise<OUT>, streamObjectSeparator: string = '|{-*-}|') {
+    constructor(transform: (input: T, functionName?: string) => Promise<OUT>,
+                streamObjectSeparator: string = '|{-*-}|',
+                onSuccessFinish?: () => void) {
         super({objectMode: true});
         this.transform = transform;
         this.streamObjectSeparator = streamObjectSeparator;
+        this.onSuccessFinish = onSuccessFinish;
     }
 
     _transform(chunk: string, encoding: string, callback: TransformCallback) {
@@ -28,4 +32,11 @@ export class StreamMITMTransform<T, OUT> extends Transform {
             }
         })
     }
+
+    _flush(callback: TransformCallback) {
+        // When no more data will be added to the stream
+        this.onSuccessFinish?.();
+        callback();
+    }
+
 }
