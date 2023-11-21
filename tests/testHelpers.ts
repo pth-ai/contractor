@@ -1,5 +1,5 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
-import {Transform} from "stream";
+import {Transform, TransformCallback} from "stream";
 
 export const TestTimes = {
     t0: new Date(Date.UTC(2021, 10)),
@@ -62,3 +62,33 @@ export function reduceAndTrim(input: string): string {
     // Reduce consecutive characters and join the lines back
     return trimmedLines.map(line => line.replace(/\s{2,}/g, ' ')).join('\n');
 }
+
+
+class ObjectArrayTransform extends Transform {
+    private objects: any[];
+    private currentIndex: number;
+
+    constructor(objects: any[]) {
+        super({ objectMode: true });
+        this.objects = objects;
+        this.currentIndex = 0;
+    }
+
+    public pushNext(): void {
+        if (this.currentIndex < this.objects.length) {
+            this.push(this.objects[this.currentIndex]);
+            this.currentIndex++;
+        } else {
+            this.push(null); // Signals end of stream
+        }
+    }
+
+    _transform(chunk: any, encoding: string, callback: TransformCallback): void {
+        // Process the chunk if needed
+        // For simplicity, we're just passing the chunk through
+        this.push(chunk);
+        callback();
+    }
+}
+
+export default ObjectArrayTransform;

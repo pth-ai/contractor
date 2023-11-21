@@ -204,7 +204,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                 name: 'task creation thr',
                 flushDebounceTimeMs: 1000,
                 maxIdleTimeoutMs: 10000,
-                windowSize: 10,
+                windowSize: 50,
             },
         );
 
