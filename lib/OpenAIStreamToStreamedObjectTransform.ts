@@ -61,6 +61,10 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                     }
                 }
 
+                if (error.message.includes(`invalid character '`)) {
+                    return {type: 'skip-char'};
+                }
+
                 if (error.message.includes('invalid end of input') && stack.length > _healPath.length) {
                     const healKey = _healPath.at(-1);
                     if (healKey) {
@@ -77,6 +81,7 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                     }
                 }
             });
+
             const validationFunction = (this.validateFunction instanceof Map
                 ? (this.objectTypeByFunctionName ? this.validateFunction.get(this.objectTypeByFunctionName) : undefined)
                 : this.validateFunction)
