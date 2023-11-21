@@ -3,13 +3,13 @@ import {encoding_for_model} from "@dqbd/tiktoken";
 import {Logger} from "./Logger";
 
 export type GPTModelsAlias = 'gpt3' | 'gpt4';
-export type GPTModels = 'gpt-3.5-turbo-0613' | 'gpt-4-0613' | 'gpt-3.5-turbo-16k-0613';
+export type GPTModels = 'gpt-3.5-turbo-0613' | 'gpt-4-1106-preview' | 'gpt-3.5-turbo-16k-0613';
 export const largeModel = (model: GPTModels): GPTModels => {
     switch (model) {
         case "gpt-3.5-turbo-0613":
             return "gpt-3.5-turbo-16k-0613";
-        case "gpt-4-0613":
-            return "gpt-4-0613";
+        case "gpt-4-1106-preview":
+            return "gpt-4-1106-preview";
         case "gpt-3.5-turbo-16k-0613":
             return "gpt-3.5-turbo-16k-0613";
     }
@@ -20,7 +20,7 @@ export const getModelForAlias = (alias: GPTModelsAlias): GPTModels => {
         case "gpt3":
             return 'gpt-3.5-turbo-0613';
         case "gpt4":
-            return 'gpt-4-0613';
+            return 'gpt-4-1106-preview';
     }
 }
 

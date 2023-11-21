@@ -1,3 +1,5 @@
+export type HealerResult = { type: 'skip-char' } | { type: 'return-healed', value: any } | undefined;
+
 /**
  * Parses a JSON5 string, constructing the JavaScript value or object described
  * by the string.
@@ -12,7 +14,7 @@
 declare function parse<T = any>(
     text: string,
     reviver?: ((this: any, key: string, value: any) => any | undefined) | null,
-    healer?: ((error: Error, stack: any[], root: any) => any) | null,
+    healer?: ((error: Error, stack: any[], root: any) => HealerResult) | null,
 ): T
 
 export = parse

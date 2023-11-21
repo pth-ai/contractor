@@ -73,7 +73,7 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                                 }
                             }
                         }
-                        return root
+                        return {type: 'return-healed', value: root}
                     }
                 }
             });

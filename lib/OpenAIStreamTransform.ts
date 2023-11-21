@@ -39,6 +39,7 @@ export class OpenAIStreamTransform extends Transform {
                 // the chat stream is done..
             } else if (payload.startsWith("data:")) {
                 const data = payload.replaceAll(/(\n)?^data:\s*/g, ''); // in case there's multiline data event
+
                 try {
                     const delta = JSON5.parse(data.trim());
                     const funcName = delta.choices[0]?.delta?.function_call?.name;
@@ -54,7 +55,7 @@ export class OpenAIStreamTransform extends Transform {
                     }
                 } catch (error: any) {
                     // sometimes OpenAI sends us only partial json..
-                    if (error.toString().trim().includes('invalid end of input')) {
+                    if (error.toString().trim().includes('invalid end of input') || error.toString().trim().includes(`Cannot read properties of undefined (reading '0')`)) {
                         this.partialChunk = chunk;
                         return callback();
                     } else {

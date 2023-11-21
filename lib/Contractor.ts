@@ -26,7 +26,9 @@ import {SchemaToTypescript} from "./SchemaToTypescript";
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 
 
-type MetaDataType = { [k: string]: string };
+type MetaDataType = {
+    [k: string]: string
+};
 
 export type ChatCompletionFunctionsWithTypes2<T, N extends string> = {
     readonly name: N;
@@ -561,7 +563,16 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, 'response content not generated');
-            const objJson = JSON5.parse(objStr);
+
+            const objJson = JSON5.parse(objStr, undefined, (error, stack, root) => {
+                if (error.message.includes(`invalid character '`)) {
+                    return {type: 'skip-char'};
+                } else {
+                    return undefined;
+                }
+            });
+
+            // const objJson = JSON5.parse(objStr, );
             const objType = objJson['name'] as string;
             assertIsDefined(objType, 'could not resolve object type');
             const objValueStr = JSON.stringify(objJson['value']);
@@ -827,7 +838,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                     const validator = this.schemaValidationCache.getValidator(functionSchema);
                     if (validator(root)) {
                         // we did what we could.. object looks good enough..
-                        return root;
+                        return {type: 'return-healed', value: root};
                     } else {
                         throw new Error(`function arguments did not pass validation [${JSON.stringify(validator.errors)}]`);
                     }
@@ -845,7 +856,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         });
     }
 
-    private recordAudit(systemMessage: string, requestMessages: ChatCompletionRequestMessage[], openAIModel: "gpt-3.5-turbo-0613" | "gpt-4-0613" | "gpt-3.5-turbo-16k-0613",
+    private recordAudit(systemMessage: string, requestMessages: ChatCompletionRequestMessage[], openAIModel: "gpt-3.5-turbo-0613" | "gpt-4-1106-preview" | "gpt-3.5-turbo-16k-0613",
                         readContent: string, request: CreateChatCompletionRequest, response?: CreateChatCompletionResponse, functionName?: string,
                         err?: Error, logMetaData?: MetaData) {
 
@@ -937,4 +948,7 @@ export const createResultsWrapper = (funcs: ({
 } as unknown as JSONSchemaType<any>);
 
 
-export type RequestMessageFormat = { role: 'user' | 'assistant', content: string };
+export type RequestMessageFormat = {
+    role: 'user' | 'assistant',
+    content: string
+};

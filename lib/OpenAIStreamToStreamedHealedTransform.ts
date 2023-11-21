@@ -22,7 +22,7 @@ export class OpenAIStreamToStreamedHealedTransform extends Transform {
         // Transform the data to uppercase
         const incoming = chunk as OpenAIStreamObject[];
         if (!Array.isArray(incoming)) {
-            return callback(new Error(`OpenAIStreamToStreamedHealedTransform was expecting array, instead got [${JSON.stringify(incoming)}]`))
+            return callback(new Error(`OpenAIStreamToStreamedHealedTransform was expecting array, instead got [${Array.isArray(incoming) || typeof incoming}][${JSON.stringify(incoming)}]`))
         }
 
         this.streamStr += incoming.map(_ => _.chunk).join('');
