@@ -1,6 +1,6 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
 import {createReadStream, readFileSync} from "fs";
-import {PassThrough, pipeline, Readable} from "stream";
+import {PassThrough, pipeline} from "stream";
 import {SplitStreamLines} from "./testHelpers";
 import {expect} from "chai";
 import {
@@ -8,10 +8,10 @@ import {
     ThrottledTransformOptions,
     WriteTo,
     basicLogger,
-    OpenAIStreamTransform,
     StreamDebuggerTransform, StreamReaderTransform, StreamMITMTransform
 } from "../lib";
 import {OpenAIStreamToStreamedHealedTransform} from "../lib/OpenAIStreamToStreamedHealedTransform";
+import {OpenAIStreamTransform} from "../lib/OpenAIStreamTransform";
 
 const timeTickInitMS = 100;
 

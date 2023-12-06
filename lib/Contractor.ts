@@ -1,19 +1,9 @@
-import {CreateChatCompletionRequest} from "openai/api";
-import {
-    ChatCompletionRequestMessage,
-    CreateChatCompletionResponse,
-    CreateEmbeddingRequest,
-    CreateEmbeddingRequestInput,
-} from "openai";
-import {IncomingMessage} from "http";
 import {pipeline} from "stream";
 import {JSONSchemaType} from "ajv";
 import {countTokens, getModelForAlias, GPTModelsAlias, largeModel, truncateInput} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
 import {IOpenAIClient} from "./OpenAIClient";
 import {IAuditor} from "./IAuditor";
-import {OpenAIStreamObject, OpenAIStreamTransform} from "./OpenAIStreamTransform";
-
 import {StreamListenerTransform} from "./StreamListenerTransform";
 import {Logger} from "./Logger";
 import {SchemaValidationCache} from "./SchemaValidationCache";
@@ -24,6 +14,9 @@ import * as JSON5 from "./json5";
 import ReadableStream = NodeJS.ReadableStream;
 import {SchemaToTypescript} from "./SchemaToTypescript";
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
+import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
+import {EmbeddingCreateParams} from "openai/resources/embeddings";
+import {OpenAIStreamChunkTransform, OpenAIStreamObject} from "./OpenAIStreamChunkTransform";
 
 
 type MetaDataType = {
@@ -82,7 +75,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                   transformObjectStream: (streamingObject: Result<T1, N1>) => Promise<OUT>,
                                                   responseSize?: number,
                                                   logMetaData?: MetaData,
-                                                  requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                  requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                   maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, N1 extends string, N2 extends string, OUT>(systemMessage: string,
@@ -92,7 +85,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                          transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2>) => Promise<OUT>,
                                                                          responseSize?: number,
                                                                          logMetaData?: MetaData,
-                                                                         requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                         requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                          maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string, OUT>(systemMessage: string,
@@ -102,7 +95,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                 transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3>) => Promise<OUT>,
                                                                                                 responseSize?: number,
                                                                                                 logMetaData?: MetaData,
-                                                                                                requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                 maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string, OUT>(systemMessage: string,
@@ -112,7 +105,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                        transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4>) => Promise<OUT>,
                                                                                                                        responseSize?: number,
                                                                                                                        logMetaData?: MetaData,
-                                                                                                                       requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                       requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                        maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, OUT>(systemMessage: string,
@@ -122,7 +115,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                               transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5>) => Promise<OUT>,
                                                                                                                                               responseSize?: number,
                                                                                                                                               logMetaData?: MetaData,
-                                                                                                                                              requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                              requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                               maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, T6, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, OUT>(systemMessage: string,
@@ -132,7 +125,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                      transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6>) => Promise<OUT>,
                                                                                                                                                                      responseSize?: number,
                                                                                                                                                                      logMetaData?: MetaData,
-                                                                                                                                                                     requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                     requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                      maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, OUT>(systemMessage: string,
@@ -142,7 +135,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                             transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7>) => Promise<OUT>,
                                                                                                                                                                                             responseSize?: number,
                                                                                                                                                                                             logMetaData?: MetaData,
-                                                                                                                                                                                            requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                            requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                             maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, OUT>(systemMessage: string,
@@ -152,7 +145,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                    transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8>) => Promise<OUT>,
                                                                                                                                                                                                                    responseSize?: number,
                                                                                                                                                                                                                    logMetaData?: MetaData,
-                                                                                                                                                                                                                   requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                    maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, OUT>(systemMessage: string,
@@ -162,7 +155,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                                           transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9>) => Promise<OUT>,
                                                                                                                                                                                                                                           responseSize?: number,
                                                                                                                                                                                                                                           logMetaData?: MetaData,
-                                                                                                                                                                                                                                          requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                                          requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                                           maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, N10 extends string, OUT>(systemMessage: string,
@@ -172,7 +165,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                                                                    transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | Result<T10, N10>) => Promise<OUT>,
                                                                                                                                                                                                                                                                    responseSize?: number,
                                                                                                                                                                                                                                                                    logMetaData?: MetaData,
-                                                                                                                                                                                                                                                                   requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                                                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                                                                    maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
     public async streamingFunction(systemMessage: string,
@@ -182,7 +175,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                    transformObjectStream: (streamingObject: Result<any, any>) => Promise<any>,
                                    responseSize: number = 800,
                                    logMetaData?: MetaData,
-                                   requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                    maxTokens: number = this.maxTokensPerRequest): Promise<NodeJS.ReadableStream | undefined> {
 
 
@@ -249,17 +242,12 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                  healer: (streamStr: string) => (string | undefined),
                                  responseSize: number = 800,
                                  logMetaData?: MetaData,
-                                 requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                 requestOverrides?: Partial<ChatCompletion>,
                                  maxTokens: number = this.maxTokensPerRequest,
                                  manipulateResult?: (input: {
                                      healedStream: string
                                  }) => any,
                                  onSuccessFinished?: () => void): Promise<NodeJS.ReadableStream | undefined> {
-
-        const {
-            openAIModel,
-            promptSize
-        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
 
         const stream = await this.makeStreamingRequest(
             systemMessage,
@@ -312,7 +300,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                             functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                             responseSize?: number,
                                                             logMetaData?: MetaData,
-                                                            requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                            requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                             maxTokens?: number): Promise<Result<T1, N1> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, N1 extends string, N2 extends string>(systemMessage: string,
@@ -322,7 +310,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                                    responseSize?: number,
                                                                                    logMetaData?: MetaData,
-                                                                                   requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                    maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string>(systemMessage: string,
@@ -332,7 +320,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                           functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                           responseSize?: number,
                                                                                                           logMetaData?: MetaData,
-                                                                                                          requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                          requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                           maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string>(systemMessage: string,
@@ -342,7 +330,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                  functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                                  responseSize?: number,
                                                                                                                                  logMetaData?: MetaData,
-                                                                                                                                 requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                 requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                  maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string>(systemMessage: string,
@@ -352,7 +340,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                         functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                                         responseSize?: number,
                                                                                                                                                         logMetaData?: MetaData,
-                                                                                                                                                        requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                        requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                         maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string>(systemMessage: string,
@@ -362,7 +350,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>],
                                                                                                                                                                                responseSize?: number,
                                                                                                                                                                                logMetaData?: MetaData,
-                                                                                                                                                                               requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string>(systemMessage: string,
@@ -372,7 +360,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                       functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>],
                                                                                                                                                                                                       responseSize?: number,
                                                                                                                                                                                                       logMetaData?: MetaData,
-                                                                                                                                                                                                      requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                      requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                       maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string>(systemMessage: string,
@@ -382,7 +370,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>],
                                                                                                                                                                                                                              responseSize?: number,
                                                                                                                                                                                                                              logMetaData?: MetaData,
-                                                                                                                                                                                                                             requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                             requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                              maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, T9, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string>(systemMessage: string,
@@ -392,7 +380,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                                                     functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>],
                                                                                                                                                                                                                                                     responseSize?: number,
                                                                                                                                                                                                                                                     logMetaData?: MetaData,
-                                                                                                                                                                                                                                                    requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                                                    requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                                                     maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | undefined>;
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, N10 extends string>(systemMessage: string,
@@ -402,7 +390,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>, ChatCompletionFunctionsWithTypes<T10, N10>],
                                                                                                                                                                                                                                                                              responseSize?: number,
                                                                                                                                                                                                                                                                              logMetaData?: MetaData,
-                                                                                                                                                                                                                                                                             requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                                                                                                                                             requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                                                                                                                                              maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | Result<T10, N10> | undefined>;
     async makeBlockingRequestWithFunctions(systemMessage: string,
                                            messages: RequestMessageFormat[],
@@ -411,7 +399,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                            functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                            responseSize: number = 800,
                                            logMetaData?: MetaData,
-                                           requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                           requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                            maxTokens: number = this.maxTokensPerRequest): Promise<Result<any, any>> {
         const {
             openAIModel,
@@ -422,7 +410,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         this.logger?.info(`performing blocking request [${actionName}]`, logMetaData);
 
-        const request: CreateChatCompletionRequest = {
+        const request: ChatCompletionCreateParamsBase = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
                 {role: 'system', content: systemMessage},
@@ -436,11 +424,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             function_call: (functions?.length ?? 0) > 1 ? 'auto' : undefined,
         };
 
-        let result: CreateChatCompletionResponse | undefined = undefined;
+        let result: ChatCompletion | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request)).data;
+            result = (await this.openAIApi.createChatCompletion(request));
 
             const funCall = result.choices[0]?.message?.function_call;
             assertIsDefined(funCall, 'function was not returned');
@@ -475,7 +463,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                                responseSize?: number,
                                                                logMetaData?: MetaData,
-                                                               requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                maxTokens?: number): Promise<Result2<T1, N1> | undefined>;
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, N1 extends string, N2 extends string>(systemMessage: string,
@@ -485,7 +473,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                       functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                                       responseSize?: number,
                                                                                       logMetaData?: MetaData,
-                                                                                      requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                      requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                       maxTokens?: number): Promise<Result2<T1, N1> | Result2<T2, N2> | undefined>;
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string>(systemMessage: string,
@@ -495,7 +483,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                              responseSize?: number,
                                                                                                              logMetaData?: MetaData,
-                                                                                                             requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                             requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                              maxTokens?: number): Promise<Result2<T1, N1> | Result2<T2, N2> | Result2<T3, N3> | undefined>;
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string>(systemMessage: string,
@@ -505,7 +493,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                     functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                                     responseSize?: number,
                                                                                                                                     logMetaData?: MetaData,
-                                                                                                                                    requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                    requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                     maxTokens?: number): Promise<Result2<T1, N1> | Result2<T2, N2> | Result2<T3, N3> | Result2<T4, N4> | undefined>;
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string>(systemMessage: string,
@@ -515,7 +503,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                            functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                                            responseSize?: number,
                                                                                                                                                            logMetaData?: MetaData,
-                                                                                                                                                           requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                                                                                                                                           requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                                                                                                                                            maxTokens?: number): Promise<Result2<T1, N1> | Result2<T2, N2> | Result2<T3, N3> | Result2<T4, N4> | Result2<T5, N5> | undefined>;
 
 
@@ -526,7 +514,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                               functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                               responseSize: number = 800,
                                               logMetaData?: MetaData,
-                                              requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                              requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                               maxTokens: number = this.maxTokensPerRequest): Promise<Result2<any, any>> {
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
@@ -543,7 +531,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         this.logger?.info(`performing blocking request alt [${actionName}]`, logMetaData);
 
-        const request: CreateChatCompletionRequest = {
+        const request: ChatCompletionCreateParamsBase = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
                 {role: 'system', content: systemMessage.replace(regexp, responseFormatGen)},
@@ -555,11 +543,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             ...requestOverrides,
         };
 
-        let result: CreateChatCompletionResponse | undefined = undefined;
+        let result: ChatCompletion | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request)).data;
+            result = (await this.openAIApi.createChatCompletion(request));
 
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, 'response content not generated');
@@ -606,7 +594,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                               actionName: string,
                               responseSize: number = 800,
                               logMetaData?: MetaData,
-                              requestOverrides?: Partial<CreateChatCompletionRequest>,
+                              requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                               maxTokens: number = this.maxTokensPerRequest): Promise<string> {
         const {
             openAIModel,
@@ -626,7 +614,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             } as RequestMessageFormat;
             return [...out, truncagtedMessage];
         }, [] as RequestMessageFormat[])
-        const request: CreateChatCompletionRequest = {
+        const request: ChatCompletionCreateParamsBase = {
             model: oaiModel,
             messages: [
                 {role: 'system', content: systemMessage},
@@ -638,11 +626,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             ...requestOverrides,
         };
 
-        let result: CreateChatCompletionResponse | undefined = undefined;
+        let result: ChatCompletion | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request)).data;
+            result = (await this.openAIApi.createChatCompletion(request));
 
             const responseStr = result.choices[0]?.message?.content;
             assertIsDefined(responseStr, 'response content not generated');
@@ -671,7 +659,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                responseSize: number = 800,
                                functions?: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                logMetaData?: MetaData,
-                               requestOverrides?: Partial<CreateChatCompletionRequest>,
+                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                maxTokens: number = this.maxTokensPerRequest): Promise<ReadableStream | undefined> {
 
         const {
@@ -683,12 +671,12 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         this.logger?.info(`making streaming request`, logMetaData);
 
-        const requestMessages: ChatCompletionRequestMessage[] = [
+        const requestMessages: RequestMessageFormat[] = [
             {role: 'system', content: systemMessage},
             ...messages,
         ]
 
-        const request: CreateChatCompletionRequest = {
+        const request: ChatCompletionCreateParamsBase = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
                 {role: 'system', content: systemMessage},
@@ -701,16 +689,12 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         };
         let readContent = ""
         let streamingFunctionName: string | undefined = undefined;
-        let createResponse: CreateChatCompletionResponse | undefined = undefined;
         try {
             const response = await this.openAIApi.createStreamingChatCompletion(request);
-            createResponse = response.data;
-            const chatStream = response.data as unknown as IncomingMessage
-            const openAITransformer = new OpenAIStreamTransform(this.logger, logMetaData);
-
+            const streamTransform = new OpenAIStreamChunkTransform(this.logger, logMetaData);
             return pipeline(
-                chatStream,
-                openAITransformer,
+                response,
+                streamTransform,
                 new StreamListenerTransform<OpenAIStreamObject>((x) => {
                     streamingFunctionName = x.functionName;
                     return readContent += x.chunk;
@@ -721,17 +705,16 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                     }
 
                     this.recordAudit(systemMessage, requestMessages, openAIModel, readContent, request,
-                        response.data, streamingFunctionName, err ?? undefined, logMetaData);
+                        undefined, streamingFunctionName, err ?? undefined, logMetaData);
 
                 }
             );
 
 
         } catch (err: any) {
-            this.logger?.error(`error performing streaming request`, err, logMetaData)
-
-            await this.recordAudit(systemMessage, requestMessages, openAIModel, readContent, request, createResponse,
-                streamingFunctionName, err, logMetaData);
+            this.logger?.error(`error performing streaming request`, err, logMetaData);
+            await this.recordAudit(systemMessage, requestMessages, openAIModel, readContent, request,
+                undefined, streamingFunctionName, err, logMetaData);
 
             return undefined;
         }
@@ -761,7 +744,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                           parameters: JSONSchemaType<T>
                                       },
                                       logMetaData?: MetaData,
-                                      requestOverrides?: Partial<CreateChatCompletionRequest>,
+                                      requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                       responseSize: number = 2000,
                                       maxTokens: number = this.maxTokensPerRequest,): Promise<T | undefined> => {
 
@@ -774,7 +757,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         this.logger?.info(`using gpt function [${gptFunction.name}]`, logMetaData);
 
-        const request: CreateChatCompletionRequest = {
+        const request: ChatCompletionCreateParamsBase = {
             model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
             messages: [
                 {role: 'system', content: systemMessage},
@@ -788,11 +771,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             function_call: {name: gptFunction.name}
         };
 
-        let result: CreateChatCompletionResponse | undefined = undefined;
+        let result: ChatCompletion | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request)).data;
+            result = (await this.openAIApi.createChatCompletion(request));
             const readContent = result.choices[0]?.message?.function_call?.arguments;
             const validatedResult = this.extractFunctionValidatedResult(readContent, gptFunction.parameters);
 
@@ -812,8 +795,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     }
 
-    public performEmbedding = async (inputContent: CreateEmbeddingRequestInput, userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
-        const createEmbeddingRequest: CreateEmbeddingRequest = {
+    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
+        const createEmbeddingRequest: EmbeddingCreateParams = {
             input: inputContent,
             model,
             user: userId
@@ -821,14 +804,14 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         const result = await this.openAIApi.performEmbedding(createEmbeddingRequest);
         await this.auditor?.auditRequest({
             request: createEmbeddingRequest,
-            resultRaw: result.data,
-            result: {data: {content: result.data.data[0]}},
+            resultRaw: result,
+            result: {data: {content: result.data[0]}},
             requestType: 'embedding',
             requestSig: logMetaData?.['requestSig'] ?? '-',
             metaData: logMetaData,
         });
 
-        return result.data.data[0]?.embedding;
+        return result.data[0]?.embedding;
     }
 
     private extractFunctionValidatedResult<T, I, K>(readContent: string | undefined, functionSchema: JSONSchemaType<T>) {
@@ -856,14 +839,14 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         });
     }
 
-    private recordAudit(systemMessage: string, requestMessages: ChatCompletionRequestMessage[], openAIModel: "gpt-3.5-turbo-0613" | "gpt-4-1106-preview" | "gpt-3.5-turbo-16k-0613",
-                        readContent: string, request: CreateChatCompletionRequest, response?: CreateChatCompletionResponse, functionName?: string,
-                        err?: Error, logMetaData?: MetaData) {
+    private async recordAudit(systemMessage: string, requestMessages: RequestMessageFormat[], openAIModel: "gpt-3.5-turbo-0613" | "gpt-4-1106-preview" | "gpt-3.5-turbo-16k-0613",
+                              readContent: string, request: ChatCompletionCreateParamsBase, response?: ChatCompletion, functionName?: string,
+                              err?: Error, logMetaData?: MetaData) {
 
         const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), openAIModel, this.logger);
         const completion_tokens = countTokens(readContent, openAIModel, this.logger);
 
-        this.auditor?.auditRequest({
+        await this.auditor?.auditRequest({
             request,
             resultRaw: {
                 id: response?.id,
@@ -891,7 +874,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                     completion_tokens,
                     total_tokens: prompt_tokens + completion_tokens,
                 }
-            } as CreateChatCompletionResponse,
+            } as ChatCompletion,
             result: err
                 ? {error: {message: err.message, details: err.toString()}}
                 : {data: {content: readContent}},
@@ -949,6 +932,6 @@ export const createResultsWrapper = (funcs: ({
 
 
 export type RequestMessageFormat = {
-    role: 'user' | 'assistant',
+    role: 'user' | 'assistant' | 'system',
     content: string
 };

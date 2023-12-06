@@ -4,7 +4,7 @@ export * from "./IAuditor";
 export * from "./Logger";
 export * from "./OpenAIStreamToStreamedObjectTransform";
 export * from "./OpenAIClient";
-export * from "./OpenAIStreamTransform";
+export * from "./OpenAIStreamChunkTransform";
 export * from "./SchemaValidationCache";
 export * from "./StreamDebuggerTransform";
 export * from "./StreamListenerTransform";
