@@ -888,9 +888,14 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         const openAIModel = getModelForAlias(model);
         const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), openAIModel, this.logger);
         if (promptSize + responseSize > maxTokens) {
-            throw new Error("input too large")
+            const m = `input too large. model [${model}] prmopt=[${promptSize}] response=[${responseSize}] max=[${maxTokens}]`;
+            console.warn(m);
+            throw new Error(m)
         }
-        return {openAIModel, promptSize};
+        return {
+            openAIModel,
+            promptSize,
+        };
     }
 
 }
