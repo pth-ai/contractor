@@ -8,9 +8,10 @@ import * as Core from "openai/core";
 import {APIPromise} from "openai/core";
 import {CreateEmbeddingResponse, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {Stream} from "openai/streaming";
+import {Agent} from "node:https";
 
 
-export interface IOpenAIClient {
+export interface IAIClient {
 
     createChatCompletion(createChatCompletionRequest: ChatCompletionCreateParamsBase, options?: Core.RequestOptions): Core.APIPromise<ChatCompletion>;
 
@@ -24,15 +25,24 @@ export interface IOpenAIClient {
 
 type IsFlagged = boolean;
 
-export class OpenAIClient implements IOpenAIClient {
+export class AIClient implements IAIClient {
     private openAIApi: OpenAI;
+    private embeddingAgent: Agent;
 
     constructor(openAIApi: OpenAI) {
         this.openAIApi = openAIApi;
+        this.embeddingAgent = new Agent({
+            keepAlive: true,
+            maxSockets: 10,
+            timeout: 10000, // 10 seconds
+        });
     }
 
     performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions): Core.APIPromise<CreateEmbeddingResponse> {
-        return this.openAIApi.embeddings.create(createEmbeddingRequest, options);
+        return this.openAIApi.embeddings.create(createEmbeddingRequest, {
+            ...options,
+            httpAgent: this.embeddingAgent,
+        });
     }
 
     performModeration(userRequest: string): Promise<IsFlagged> {

@@ -2,7 +2,6 @@ import {pipeline} from "stream";
 import {JSONSchemaType} from "ajv";
 import {countTokens, getModelForAlias, GPTModelsAlias, largeModel, truncateInput} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
-import {IOpenAIClient} from "./OpenAIClient";
 import {IAuditor} from "./IAuditor";
 import {StreamListenerTransform} from "./StreamListenerTransform";
 import {Logger} from "./Logger";
@@ -15,8 +14,9 @@ import ReadableStream = NodeJS.ReadableStream;
 import {SchemaToTypescript} from "./SchemaToTypescript";
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
-import {EmbeddingCreateParams} from "openai/resources/embeddings";
+import {Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {OpenAIStreamChunkTransform, OpenAIStreamObject} from "./OpenAIStreamChunkTransform";
+import {AIClient} from "./AIClient";
 
 
 type MetaDataType = {
@@ -57,7 +57,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     private readonly schemaValidationCache: SchemaValidationCache;
 
 
-    constructor(private openAIApi: IOpenAIClient,
+    constructor(private openAIApi: AIClient,
                 private functionsMessagePlaceHolder: string,
                 private auditor?: IAuditor<MetaData>,
                 private maxTokensPerRequest: number = 8000,
@@ -723,7 +723,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     public async performModeration(input: string): Promise<void> {
         const isFlagged = await this.openAIApi.performModeration(input);
         if (isFlagged) {
-            throw new Error(`request flagged due to moderation. input: [${input.slice(0, 200)}]`);
+            throw new Error(`request flagged due to moderation. input: [${input.slice(0, 2000)}]`);
         }
     }
 
@@ -795,7 +795,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     }
 
-    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<number[] | undefined> => {
+    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<Embedding[]> => {
         const createEmbeddingRequest: EmbeddingCreateParams = {
             input: inputContent,
             model,
@@ -805,13 +805,13 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         await this.auditor?.auditRequest({
             request: createEmbeddingRequest,
             resultRaw: result,
-            result: {data: {content: result.data[0]}},
+            result: {data: {content: result.data}},
             requestType: 'embedding',
             requestSig: logMetaData?.['requestSig'] ?? '-',
             metaData: logMetaData,
         });
 
-        return result.data[0]?.embedding;
+        return result.data;
     }
 
     private extractFunctionValidatedResult<T, I, K>(readContent: string | undefined, functionSchema: JSONSchemaType<T>) {
