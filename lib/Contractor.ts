@@ -1,6 +1,6 @@
 import {pipeline} from "stream";
 import {JSONSchemaType} from "ajv";
-import {countTokens, getModelForAlias, GPTModelsAlias, largeModel, truncateInput} from "./gptUtils";
+import {countTokens, GPTModels, largeModel, truncateInput} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
 import {IAuditor} from "./IAuditor";
 import {StreamListenerTransform} from "./StreamListenerTransform";
@@ -14,9 +14,10 @@ import ReadableStream = NodeJS.ReadableStream;
 import {SchemaToTypescript} from "./SchemaToTypescript";
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
-import {Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
+import {CreateEmbeddingResponse, Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {OpenAIStreamChunkTransform, OpenAIStreamObject} from "./OpenAIStreamChunkTransform";
 import {AIClient} from "./AIClient";
+import {ICacher} from "./ICacher";
 
 
 type MetaDataType = {
@@ -60,6 +61,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     constructor(private openAIApi: AIClient,
                 private functionsMessagePlaceHolder: string,
                 private auditor?: IAuditor<MetaData>,
+                private cacher?: ICacher,
                 private maxTokensPerRequest: number = 8000,
                 private streamObjectSeparator: string = defaultStreamDelimiterSeparator,
                 private logger?: Logger) {
@@ -70,7 +72,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     // Define the function implementation
     streamingFunction<T1, N1 extends string, OUT>(systemMessage: string,
                                                   messages: RequestMessageFormat[],
-                                                  model: GPTModelsAlias,
+                                                  model: GPTModels,
                                                   functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                   transformObjectStream: (streamingObject: Result<T1, N1>) => Promise<OUT>,
                                                   responseSize?: number,
@@ -80,7 +82,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, N1 extends string, N2 extends string, OUT>(systemMessage: string,
                                                                          messages: RequestMessageFormat[],
-                                                                         model: GPTModelsAlias,
+                                                                         model: GPTModels,
                                                                          functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                          transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2>) => Promise<OUT>,
                                                                          responseSize?: number,
@@ -90,7 +92,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string, OUT>(systemMessage: string,
                                                                                                 messages: RequestMessageFormat[],
-                                                                                                model: GPTModelsAlias,
+                                                                                                model: GPTModels,
                                                                                                 functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                 transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3>) => Promise<OUT>,
                                                                                                 responseSize?: number,
@@ -100,7 +102,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string, OUT>(systemMessage: string,
                                                                                                                        messages: RequestMessageFormat[],
-                                                                                                                       model: GPTModelsAlias,
+                                                                                                                       model: GPTModels,
                                                                                                                        functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                        transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4>) => Promise<OUT>,
                                                                                                                        responseSize?: number,
@@ -110,7 +112,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, OUT>(systemMessage: string,
                                                                                                                                               messages: RequestMessageFormat[],
-                                                                                                                                              model: GPTModelsAlias,
+                                                                                                                                              model: GPTModels,
                                                                                                                                               functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                               transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5>) => Promise<OUT>,
                                                                                                                                               responseSize?: number,
@@ -120,7 +122,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, T6, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, OUT>(systemMessage: string,
                                                                                                                                                                      messages: RequestMessageFormat[],
-                                                                                                                                                                     model: GPTModelsAlias,
+                                                                                                                                                                     model: GPTModels,
                                                                                                                                                                      functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>],
                                                                                                                                                                      transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6>) => Promise<OUT>,
                                                                                                                                                                      responseSize?: number,
@@ -130,7 +132,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, OUT>(systemMessage: string,
                                                                                                                                                                                             messages: RequestMessageFormat[],
-                                                                                                                                                                                            model: GPTModelsAlias,
+                                                                                                                                                                                            model: GPTModels,
                                                                                                                                                                                             functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>],
                                                                                                                                                                                             transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7>) => Promise<OUT>,
                                                                                                                                                                                             responseSize?: number,
@@ -140,7 +142,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, OUT>(systemMessage: string,
                                                                                                                                                                                                                    messages: RequestMessageFormat[],
-                                                                                                                                                                                                                   model: GPTModelsAlias,
+                                                                                                                                                                                                                   model: GPTModels,
                                                                                                                                                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>],
                                                                                                                                                                                                                    transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8>) => Promise<OUT>,
                                                                                                                                                                                                                    responseSize?: number,
@@ -150,7 +152,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, OUT>(systemMessage: string,
                                                                                                                                                                                                                                           messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                          model: GPTModelsAlias,
+                                                                                                                                                                                                                                          model: GPTModels,
                                                                                                                                                                                                                                           functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>],
                                                                                                                                                                                                                                           transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9>) => Promise<OUT>,
                                                                                                                                                                                                                                           responseSize?: number,
@@ -160,7 +162,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, N10 extends string, OUT>(systemMessage: string,
                                                                                                                                                                                                                                                                    messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                                                   model: GPTModelsAlias,
+                                                                                                                                                                                                                                                                   model: GPTModels,
                                                                                                                                                                                                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>, ChatCompletionFunctionsWithTypes<T10, N10>],
                                                                                                                                                                                                                                                                    transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | Result<T10, N10>) => Promise<OUT>,
                                                                                                                                                                                                                                                                    responseSize?: number,
@@ -170,7 +172,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     public async streamingFunction(systemMessage: string,
                                    messages: RequestMessageFormat[],
-                                   model: GPTModelsAlias,
+                                   model: GPTModels,
                                    functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                    transformObjectStream: (streamingObject: Result<any, any>) => Promise<any>,
                                    responseSize: number = 800,
@@ -238,7 +240,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     public async streamingHealer(systemMessage: string,
                                  messages: RequestMessageFormat[],
-                                 model: GPTModelsAlias,
+                                 model: GPTModels,
                                  healer: (streamStr: string) => (string | undefined),
                                  responseSize: number = 800,
                                  logMetaData?: MetaData,
@@ -295,7 +297,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, N1 extends string>(systemMessage: string,
                                                             messages: RequestMessageFormat[],
-                                                            model: GPTModelsAlias,
+                                                            model: GPTModels,
                                                             actionName: string,
                                                             functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                             responseSize?: number,
@@ -305,7 +307,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, N1 extends string, N2 extends string>(systemMessage: string,
                                                                                    messages: RequestMessageFormat[],
-                                                                                   model: GPTModelsAlias,
+                                                                                   model: GPTModels,
                                                                                    actionName: string,
                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                                    responseSize?: number,
@@ -315,7 +317,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string>(systemMessage: string,
                                                                                                           messages: RequestMessageFormat[],
-                                                                                                          model: GPTModelsAlias,
+                                                                                                          model: GPTModels,
                                                                                                           actionName: string,
                                                                                                           functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                           responseSize?: number,
@@ -325,7 +327,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string>(systemMessage: string,
                                                                                                                                  messages: RequestMessageFormat[],
-                                                                                                                                 model: GPTModelsAlias,
+                                                                                                                                 model: GPTModels,
                                                                                                                                  actionName: string,
                                                                                                                                  functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                                  responseSize?: number,
@@ -335,7 +337,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string>(systemMessage: string,
                                                                                                                                                         messages: RequestMessageFormat[],
-                                                                                                                                                        model: GPTModelsAlias,
+                                                                                                                                                        model: GPTModels,
                                                                                                                                                         actionName: string,
                                                                                                                                                         functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                                         responseSize?: number,
@@ -345,7 +347,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string>(systemMessage: string,
                                                                                                                                                                                messages: RequestMessageFormat[],
-                                                                                                                                                                               model: GPTModelsAlias,
+                                                                                                                                                                               model: GPTModels,
                                                                                                                                                                                actionName: string,
                                                                                                                                                                                functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>],
                                                                                                                                                                                responseSize?: number,
@@ -355,7 +357,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string>(systemMessage: string,
                                                                                                                                                                                                       messages: RequestMessageFormat[],
-                                                                                                                                                                                                      model: GPTModelsAlias,
+                                                                                                                                                                                                      model: GPTModels,
                                                                                                                                                                                                       actionName: string,
                                                                                                                                                                                                       functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>],
                                                                                                                                                                                                       responseSize?: number,
@@ -365,7 +367,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string>(systemMessage: string,
                                                                                                                                                                                                                              messages: RequestMessageFormat[],
-                                                                                                                                                                                                                             model: GPTModelsAlias,
+                                                                                                                                                                                                                             model: GPTModels,
                                                                                                                                                                                                                              actionName: string,
                                                                                                                                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>],
                                                                                                                                                                                                                              responseSize?: number,
@@ -375,7 +377,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, T9, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string>(systemMessage: string,
                                                                                                                                                                                                                                                     messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                                    model: GPTModelsAlias,
+                                                                                                                                                                                                                                                    model: GPTModels,
                                                                                                                                                                                                                                                     actionName: string,
                                                                                                                                                                                                                                                     functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>],
                                                                                                                                                                                                                                                     responseSize?: number,
@@ -385,7 +387,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctions<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, N10 extends string>(systemMessage: string,
                                                                                                                                                                                                                                                                              messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                                                             model: GPTModelsAlias,
+                                                                                                                                                                                                                                                                             model: GPTModels,
                                                                                                                                                                                                                                                                              actionName: string,
                                                                                                                                                                                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>, ChatCompletionFunctionsWithTypes<T10, N10>],
                                                                                                                                                                                                                                                                              responseSize?: number,
@@ -394,7 +396,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                                                                                                                                                                                                                                                              maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | Result<T10, N10> | undefined>;
     async makeBlockingRequestWithFunctions(systemMessage: string,
                                            messages: RequestMessageFormat[],
-                                           model: GPTModelsAlias,
+                                           model: GPTModels,
                                            actionName: string,
                                            functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                            responseSize: number = 800,
@@ -402,7 +404,6 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                            requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                            maxTokens: number = this.maxTokensPerRequest): Promise<Result<any, any>> {
         const {
-            openAIModel,
             promptSize
         } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
 
@@ -411,7 +412,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         this.logger?.info(`performing blocking request [${actionName}]`, logMetaData);
 
         const request: ChatCompletionCreateParamsBase = {
-            model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
+            model: promptSize + responseSize > 4000 ? largeModel(model) : model,
             messages: [
                 {role: 'system', content: systemMessage},
                 ...messages,
@@ -436,7 +437,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             assertIsDefined(validator, `could not find func validator for name [${funCall.name}]`)
             const validatedResult = this.extractFunctionValidatedResult(funCall.arguments, validator.parameters);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, funCall.arguments ?? '', request, result,
+            await this.recordAudit(systemMessage, messages, model, funCall.arguments ?? '', request, result,
                 actionName, undefined, logMetaData);
 
             return {
@@ -448,7 +449,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, "", request,
+            await this.recordAudit(systemMessage, messages, model, "", request,
                 result, actionName, err, logMetaData);
 
             throw new Error("error performing blocking request with functions");
@@ -458,7 +459,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctionsAlt<T1, N1 extends string>(systemMessage: string,
                                                                messages: RequestMessageFormat[],
-                                                               model: GPTModelsAlias,
+                                                               model: GPTModels,
                                                                actionName: string,
                                                                functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
                                                                responseSize?: number,
@@ -468,7 +469,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, N1 extends string, N2 extends string>(systemMessage: string,
                                                                                       messages: RequestMessageFormat[],
-                                                                                      model: GPTModelsAlias,
+                                                                                      model: GPTModels,
                                                                                       actionName: string,
                                                                                       functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
                                                                                       responseSize?: number,
@@ -478,7 +479,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string>(systemMessage: string,
                                                                                                              messages: RequestMessageFormat[],
-                                                                                                             model: GPTModelsAlias,
+                                                                                                             model: GPTModels,
                                                                                                              actionName: string,
                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
                                                                                                              responseSize?: number,
@@ -488,7 +489,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string>(systemMessage: string,
                                                                                                                                     messages: RequestMessageFormat[],
-                                                                                                                                    model: GPTModelsAlias,
+                                                                                                                                    model: GPTModels,
                                                                                                                                     actionName: string,
                                                                                                                                     functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
                                                                                                                                     responseSize?: number,
@@ -498,7 +499,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string>(systemMessage: string,
                                                                                                                                                            messages: RequestMessageFormat[],
-                                                                                                                                                           model: GPTModelsAlias,
+                                                                                                                                                           model: GPTModels,
                                                                                                                                                            actionName: string,
                                                                                                                                                            functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
                                                                                                                                                            responseSize?: number,
@@ -509,7 +510,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     async makeBlockingRequestWithFunctionsAlt(systemMessage: string,
                                               messages: RequestMessageFormat[],
-                                              model: GPTModelsAlias,
+                                              model: GPTModels,
                                               actionName: string,
                                               functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                               responseSize: number = 800,
@@ -523,7 +524,6 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         const _messages = messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)}));
         const {
-            openAIModel,
             promptSize
         } = this.measureRequest(model, systemMessage, _messages, responseSize, maxTokens);
 
@@ -532,7 +532,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         this.logger?.info(`performing blocking request alt [${actionName}]`, logMetaData);
 
         const request: ChatCompletionCreateParamsBase = {
-            model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
+            model: promptSize + responseSize > 4000 ? largeModel(model) : model,
             messages: [
                 {role: 'system', content: systemMessage.replace(regexp, responseFormatGen)},
                 ..._messages,
@@ -543,11 +543,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             ...requestOverrides,
         };
 
-        let result: ChatCompletion | undefined = undefined;
+        let result: (ChatCompletion & { isFromCache?: boolean }) | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request));
+            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request)) ?? await this.openAIApi.createChatCompletion(request);
 
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, 'response content not generated');
@@ -568,7 +568,13 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             assertIsDefined(validator, `could not find func validator for name [${objType}]`)
             const validatedResult = this.extractFunctionValidatedResult(objValueStr, validator.parameters);
 
-            await this.recordAudit(systemMessage, _messages, openAIModel, objValueStr, request, result,
+
+            if (!result.isFromCache) {
+                this.cacher?.cacheRequest(result, request)
+                    .then(_ignore => ({}))
+            }
+
+            await this.recordAudit(systemMessage, _messages, model, objValueStr, request, result,
                 actionName, undefined, logMetaData);
 
             return {
@@ -580,7 +586,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
 
-            await this.recordAudit(systemMessage, _messages, openAIModel, "", request,
+            await this.recordAudit(systemMessage, _messages, model, "", request,
                 result, undefined, err, logMetaData);
 
             throw new Error("error performing blocking request with functions alt");
@@ -590,19 +596,18 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     async makeBlockingRequest(systemMessage: string,
                               messages: RequestMessageFormat[],
-                              model: GPTModelsAlias,
+                              model: GPTModels,
                               actionName: string,
                               responseSize: number = 800,
                               logMetaData?: MetaData,
                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                               maxTokens: number = this.maxTokensPerRequest): Promise<string> {
         const {
-            openAIModel,
             promptSize
         } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
 
         await this.moderateLastMessage(messages);
-        const oaiModel = promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel;
+        const oaiModel = promptSize + responseSize > 4000 ? largeModel(model) : model;
         this.logger?.debug(`performing blocking request [${actionName}]`, logMetaData);
         const tokensForRequest = maxTokens - (promptSize + responseSize);
         const truncatedMessages = messages.reduce((out, message) => {
@@ -626,16 +631,21 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             ...requestOverrides,
         };
 
-        let result: ChatCompletion | undefined = undefined;
+        let result: (ChatCompletion & { isFromCache?: boolean }) | undefined = undefined;
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request));
+            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request)) ?? await this.openAIApi.createChatCompletion(request);
 
             const responseStr = result.choices[0]?.message?.content;
             assertIsDefined(responseStr, 'response content not generated');
 
-            await this.recordAudit(systemMessage, messages, openAIModel, responseStr, request, result,
+            if (!result.isFromCache) {
+                this.cacher?.cacheRequest(result, request)
+                    .then(_ignore => ({}))
+            }
+
+            await this.recordAudit(systemMessage, messages, model, responseStr, request, result,
                 actionName, undefined, logMetaData);
 
             return responseStr;
@@ -643,7 +653,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, "", request,
+            await this.recordAudit(systemMessage, messages, model, "", request,
                 result, undefined, err, logMetaData);
 
             throw new Error(`error performing blocking request [${actionName}]`);
@@ -655,7 +665,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     // TODO: create tests for functions and wihtout functions
     async makeStreamingRequest(systemMessage: string,
                                messages: RequestMessageFormat[],
-                               model: GPTModelsAlias,
+                               model: GPTModels,
                                responseSize: number = 800,
                                functions?: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                logMetaData?: MetaData,
@@ -663,7 +673,6 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                maxTokens: number = this.maxTokensPerRequest): Promise<ReadableStream | undefined> {
 
         const {
-            openAIModel,
             promptSize
         } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
 
@@ -677,7 +686,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         ]
 
         const request: ChatCompletionCreateParamsBase = {
-            model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
+            model: promptSize + responseSize > 4000 ? largeModel(model) : model,
             messages: [
                 {role: 'system', content: systemMessage},
                 ...messages,
@@ -692,6 +701,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         try {
             const response = await this.openAIApi.createStreamingChatCompletion(request);
             const streamTransform = new OpenAIStreamChunkTransform(this.logger, logMetaData);
+            // TODO: for streaming - cache + retrieve this from cache..
             return pipeline(
                 response,
                 streamTransform,
@@ -704,7 +714,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                         this.logger?.error('error during stream', err ?? {}, logMetaData);
                     }
 
-                    this.recordAudit(systemMessage, requestMessages, openAIModel, readContent, request,
+                    this.recordAudit(systemMessage, requestMessages, model, readContent, request,
                         undefined, streamingFunctionName, err ?? undefined, logMetaData);
 
                 }
@@ -713,7 +723,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         } catch (err: any) {
             this.logger?.error(`error performing streaming request`, err, logMetaData);
-            await this.recordAudit(systemMessage, requestMessages, openAIModel, readContent, request,
+            await this.recordAudit(systemMessage, requestMessages, model, readContent, request,
                 undefined, streamingFunctionName, err, logMetaData);
 
             return undefined;
@@ -737,7 +747,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
     public singleFunction = async <T>(systemMessage: string,
                                       messages: RequestMessageFormat[],
-                                      model: GPTModelsAlias = 'gpt3',
+                                      model: GPTModels = 'gpt-3.5-turbo-0613',
                                       gptFunction: {
                                           name: string,
                                           description: string;
@@ -749,7 +759,6 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
                                       maxTokens: number = this.maxTokensPerRequest,): Promise<T | undefined> => {
 
         const {
-            openAIModel,
             promptSize
         } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
 
@@ -758,7 +767,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         this.logger?.info(`using gpt function [${gptFunction.name}]`, logMetaData);
 
         const request: ChatCompletionCreateParamsBase = {
-            model: promptSize + responseSize > 4000 ? largeModel(openAIModel) : openAIModel,
+            model: promptSize + responseSize > 4000 ? largeModel(model) : model,
             messages: [
                 {role: 'system', content: systemMessage},
                 ...messages,
@@ -779,7 +788,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             const readContent = result.choices[0]?.message?.function_call?.arguments;
             const validatedResult = this.extractFunctionValidatedResult(readContent, gptFunction.parameters);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, readContent ?? '', request, result,
+            await this.recordAudit(systemMessage, messages, model, readContent ?? '', request, result,
                 gptFunction.name, undefined, logMetaData)
 
             return validatedResult;
@@ -787,7 +796,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         } catch (err: any) {
             this.logger?.error(`error performing [${gptFunction.name}]`, err);
 
-            await this.recordAudit(systemMessage, messages, openAIModel, result?.choices[0]?.message?.function_call?.arguments ?? '',
+            await this.recordAudit(systemMessage, messages, model, result?.choices[0]?.message?.function_call?.arguments ?? '',
                 request, result, gptFunction.name, undefined, logMetaData);
 
             throw new Error(`error performing single function [${gptFunction.name}]`);
@@ -801,7 +810,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             model,
             user: userId
         };
-        const result = await this.openAIApi.performEmbedding(createEmbeddingRequest);
+        const result: CreateEmbeddingResponse & {
+            isFromCache?: boolean
+        } = (await truthy(this.cacher, async _ => await _.retrieveEmbeddingFromCache(createEmbeddingRequest))) ??
+            await this.openAIApi.performEmbedding(createEmbeddingRequest);
+
         await this.auditor?.auditRequest({
             request: createEmbeddingRequest,
             resultRaw: result,
@@ -810,6 +823,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
             requestSig: logMetaData?.['requestSig'] ?? '-',
             metaData: logMetaData,
         });
+
+        if (!result.isFromCache) {
+            this.cacher?.cacheEmbedding(result, createEmbeddingRequest)
+                .then(_ignore => ({}));
+        }
 
         return result.data;
     }
@@ -839,12 +857,12 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         });
     }
 
-    private async recordAudit(systemMessage: string, requestMessages: RequestMessageFormat[], openAIModel: "gpt-3.5-turbo-0613" | "gpt-4-1106-preview" | "gpt-3.5-turbo-16k-0613",
+    private async recordAudit(systemMessage: string, requestMessages: RequestMessageFormat[], model: GPTModels,
                               readContent: string, request: ChatCompletionCreateParamsBase, response?: ChatCompletion, functionName?: string,
                               err?: Error, logMetaData?: MetaData) {
 
-        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), openAIModel, this.logger);
-        const completion_tokens = countTokens(readContent, openAIModel, this.logger);
+        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), model, this.logger);
+        const completion_tokens = countTokens(readContent, model, this.logger);
 
         await this.auditor?.auditRequest({
             request,
@@ -884,16 +902,15 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         });
     }
 
-    private measureRequest(model: "gpt3" | "gpt4", systemMessage: string, messages: RequestMessageFormat[], responseSize: number, maxTokens: number) {
-        const openAIModel = getModelForAlias(model);
-        const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), openAIModel, this.logger);
+    private measureRequest(model: GPTModels, systemMessage: string, messages: RequestMessageFormat[], responseSize: number, maxTokens: number) {
+        const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), model, this.logger);
         if (promptSize + responseSize > maxTokens) {
             const m = `input too large. model [${model}] prmopt=[${promptSize}] response=[${responseSize}] max=[${maxTokens}]`;
             console.warn(m);
             throw new Error(m)
         }
         return {
-            openAIModel,
+            model,
             promptSize,
         };
     }
