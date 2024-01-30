@@ -3,7 +3,7 @@ import {encoding_for_model} from "@dqbd/tiktoken";
 import {Logger} from "./Logger";
 
 
-export type GPTModels = 'gpt-3.5-turbo-0613' | 'gpt-4-1106-preview' | 'gpt-3.5-turbo-16k-0613' | 'gpt-3.5-turbo-1106';
+export type GPTModels = 'gpt-3.5-turbo-0613' | 'gpt-4-1106-preview' | 'gpt-3.5-turbo-16k-0613' | 'gpt-3.5-turbo-1106' | string;
 export const largeModel = (model: GPTModels): GPTModels => {
     switch (model) {
         case "gpt-3.5-turbo-0613":
@@ -14,6 +14,8 @@ export const largeModel = (model: GPTModels): GPTModels => {
             return "gpt-4-1106-preview";
         case "gpt-3.5-turbo-16k-0613":
             return "gpt-3.5-turbo-16k-0613";
+        default:
+            return model;
     }
 }
 

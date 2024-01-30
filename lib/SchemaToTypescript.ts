@@ -17,16 +17,21 @@ export class SchemaToTypescript {
         if (schema.type === "object" && schema.properties) {
             for (const propName in schema.properties) {
                 const propSchema = schema.properties[propName];
-                if (propSchema.type === "object") {
-                    const nestedTypeName = this.getNestedTypeName(propSchema, propName);
-                    this.processSchema(propSchema, nestedTypeName, !propSchema.$id);
-                } else if (propSchema.type === "array" && propSchema.items) {
-                    const nestedSchema = propSchema.items
-                    const nestedTypeName = this.getNestedTypeName(nestedSchema, propName);
-                    this.processSchema(nestedSchema, nestedTypeName, !nestedSchema.$id);
+                if (propSchema) {
+                    if (propSchema.type === "object") {
+                        const nestedTypeName = this.getNestedTypeName(propSchema, propName);
+                        this.processSchema(propSchema, nestedTypeName, !propSchema.$id);
+                    } else if (propSchema.type === "array" && propSchema.items) {
+                        const nestedSchema = propSchema.items
+                        const nestedTypeName = this.getNestedTypeName(nestedSchema, propName);
+                        this.processSchema(nestedSchema, nestedTypeName, !nestedSchema.$id);
+                    } else {
+                        // console.debug('did not process in schema', propSchema);
+                    }
                 } else {
-                    // console.debug('did not process in schema', propSchema);
+                    console.debug(`skipping empty property [${propName}] [${JSON.stringify(schema.properties)}]`)
                 }
+
             }
         } else if (schema.oneOf) {
             schema.oneOf.forEach((oo: any, idx: number) => {

@@ -1,6 +1,6 @@
 import {pipeline} from "stream";
 import {JSONSchemaType} from "ajv";
-import {countTokens, GPTModels, largeModel, truncateInput} from "./gptUtils";
+import {countTokens, GPTModels, largeModel} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
 import {IAuditor} from "./IAuditor";
 import {StreamListenerTransform} from "./StreamListenerTransform";
@@ -52,19 +52,20 @@ export type Result<T, N extends string> = {
 
 export const defaultStreamDelimiterSeparator = '|{-*-}|';
 
-export class Contractor<MetaData extends Partial<MetaDataType>> {
+export class Contractor<MetaData extends MetaDataType> {
 
 
     private readonly schemaValidationCache: SchemaValidationCache;
 
 
-    constructor(private openAIApi: AIClient,
+    constructor(private aiClient: AIClient,
                 private functionsMessagePlaceHolder: string,
                 private auditor?: IAuditor<MetaData>,
                 private cacher?: ICacher,
                 private maxTokensPerRequest: number = 8000,
                 private streamObjectSeparator: string = defaultStreamDelimiterSeparator,
-                private logger?: Logger) {
+                private logger?: Logger,
+                private settings?: { disableModeration?: boolean }) {
 
         this.schemaValidationCache = new SchemaValidationCache();
     }
@@ -429,7 +430,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request));
+            result = (await this.aiClient.createChatCompletion(request, logMetaData));
 
             const funCall = result.choices[0]?.message?.function_call;
             assertIsDefined(funCall, 'function was not returned');
@@ -547,7 +548,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         try {
 
-            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request)) ?? await this.openAIApi.createChatCompletion(request);
+            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request, logMetaData)) ?? await this.aiClient.createChatCompletion(request, logMetaData);
 
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, 'response content not generated');
@@ -570,7 +571,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
 
             if (!result.isFromCache) {
-                this.cacher?.cacheRequest(result, request)
+                this.cacher?.cacheRequest(result, request, logMetaData)
                     .then(_ignore => ({}))
             }
 
@@ -608,22 +609,13 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         await this.moderateLastMessage(messages);
         const oaiModel = promptSize + responseSize > 4000 ? largeModel(model) : model;
-        this.logger?.debug(`performing blocking request [${actionName}]`, logMetaData);
         const tokensForRequest = maxTokens - (promptSize + responseSize);
-        const truncatedMessages = messages.reduce((out, message) => {
-            const totalUsedSoFar = countTokens(out.map(_ => _.content).join(' '), oaiModel, this.logger);
-            const truncagtedMessage = {
-                ...message,
-                content: truncateInput(message.content, model,
-                    tokensForRequest - totalUsedSoFar, this.logger)
-            } as RequestMessageFormat;
-            return [...out, truncagtedMessage];
-        }, [] as RequestMessageFormat[])
+
         const request: ChatCompletionCreateParamsBase = {
             model: oaiModel,
             messages: [
                 {role: 'system', content: systemMessage},
-                ...truncatedMessages,
+                ...messages,
             ],
             temperature: 0,
             top_p: 1,
@@ -635,13 +627,13 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         try {
 
-            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request)) ?? await this.openAIApi.createChatCompletion(request);
+            result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request, logMetaData)) ?? await this.aiClient.createChatCompletion(request, logMetaData);
 
             const responseStr = result.choices[0]?.message?.content;
             assertIsDefined(responseStr, 'response content not generated');
 
             if (!result.isFromCache) {
-                this.cacher?.cacheRequest(result, request)
+                this.cacher?.cacheRequest(result, request, logMetaData)
                     .then(_ignore => ({}))
             }
 
@@ -699,7 +691,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         let readContent = ""
         let streamingFunctionName: string | undefined = undefined;
         try {
-            const response = await this.openAIApi.createStreamingChatCompletion(request);
+            const response = await this.aiClient.createStreamingChatCompletion(request, logMetaData);
             const streamTransform = new OpenAIStreamChunkTransform(this.logger, logMetaData);
             // TODO: for streaming - cache + retrieve this from cache..
             return pipeline(
@@ -731,9 +723,11 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
     }
 
     public async performModeration(input: string): Promise<void> {
-        const isFlagged = await this.openAIApi.performModeration(input);
-        if (isFlagged) {
-            throw new Error(`request flagged due to moderation. input: [${input.slice(0, 2000)}]`);
+        if (!this.settings?.disableModeration) {
+            const isFlagged = await this.aiClient.performModeration(input);
+            if (isFlagged) {
+                throw new Error(`request flagged due to moderation. input: [${input.slice(0, 2000)}]`);
+            }
         }
     }
 
@@ -784,7 +778,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
 
         try {
 
-            result = (await this.openAIApi.createChatCompletion(request));
+            result = (await this.aiClient.createChatCompletion(request, logMetaData));
             const readContent = result.choices[0]?.message?.function_call?.arguments;
             const validatedResult = this.extractFunctionValidatedResult(readContent, gptFunction.parameters);
 
@@ -812,8 +806,8 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         };
         const result: CreateEmbeddingResponse & {
             isFromCache?: boolean
-        } = (await truthy(this.cacher, async _ => await _.retrieveEmbeddingFromCache(createEmbeddingRequest))) ??
-            await this.openAIApi.performEmbedding(createEmbeddingRequest);
+        } = (await truthy(this.cacher, async _ => await _.retrieveEmbeddingFromCache(createEmbeddingRequest, logMetaData))) ??
+            await this.aiClient.performEmbedding(createEmbeddingRequest, logMetaData);
 
         await this.auditor?.auditRequest({
             request: createEmbeddingRequest,
@@ -825,7 +819,7 @@ export class Contractor<MetaData extends Partial<MetaDataType>> {
         });
 
         if (!result.isFromCache) {
-            this.cacher?.cacheEmbedding(result, createEmbeddingRequest)
+            this.cacher?.cacheEmbedding(result, createEmbeddingRequest, logMetaData)
                 .then(_ignore => ({}));
         }
 
