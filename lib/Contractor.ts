@@ -637,8 +637,8 @@ export class Contractor<MetaData extends MetaDataType> {
                     .then(_ignore => ({}))
             }
 
-            await this.recordAudit(systemMessage, messages, model, responseStr, request, result,
-                actionName, undefined, logMetaData);
+            await this.recordAudit(systemMessage, messages, result.model, responseStr, request, result,
+                actionName, undefined, {...logMetaData, isFromCache: result.isFromCache ? 'true' : undefined} as any);
 
             return responseStr;
 
@@ -782,7 +782,7 @@ export class Contractor<MetaData extends MetaDataType> {
             const readContent = result.choices[0]?.message?.function_call?.arguments;
             const validatedResult = this.extractFunctionValidatedResult(readContent, gptFunction.parameters);
 
-            await this.recordAudit(systemMessage, messages, model, readContent ?? '', request, result,
+            await this.recordAudit(systemMessage, messages, result.model, readContent ?? '', request, result,
                 gptFunction.name, undefined, logMetaData)
 
             return validatedResult;
@@ -790,7 +790,7 @@ export class Contractor<MetaData extends MetaDataType> {
         } catch (err: any) {
             this.logger?.error(`error performing [${gptFunction.name}]`, err);
 
-            await this.recordAudit(systemMessage, messages, model, result?.choices[0]?.message?.function_call?.arguments ?? '',
+            await this.recordAudit(systemMessage, messages, result?.model ?? model, result?.choices[0]?.message?.function_call?.arguments ?? '',
                 request, result, gptFunction.name, undefined, logMetaData);
 
             throw new Error(`error performing single function [${gptFunction.name}]`);
@@ -798,7 +798,7 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002', logMetaData?: MetaData,): Promise<Embedding[]> => {
+    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002' | string, logMetaData?: MetaData,): Promise<Embedding[]> => {
         const createEmbeddingRequest: EmbeddingCreateParams = {
             input: inputContent,
             model,
@@ -855,8 +855,8 @@ export class Contractor<MetaData extends MetaDataType> {
                               readContent: string, request: ChatCompletionCreateParamsBase, response?: ChatCompletion, functionName?: string,
                               err?: Error, logMetaData?: MetaData) {
 
-        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), model, this.logger);
-        const completion_tokens = countTokens(readContent, model, this.logger);
+        const prompt_tokens = countTokens(systemMessage + requestMessages.map(_ => _.content).join('\n'), response?.model ?? model, this.logger);
+        const completion_tokens = countTokens(readContent, response?.model ?? model, this.logger);
 
         await this.auditor?.auditRequest({
             request,
