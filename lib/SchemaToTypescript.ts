@@ -5,7 +5,7 @@ export class SchemaToTypescript {
     private schemaRefStore: Record<string, JSONSchemaType<any>> = {};
     private typeStore: Record<string, JSONSchemaType<any>> = {};
 
-    constructor(rootSchema: JSONSchemaType<any>, rootName: string) {
+    constructor(rootSchema: JSONSchemaType<any>, private rootName: string) {
         this.processSchema(rootSchema, rootName);
     }
 
@@ -48,6 +48,14 @@ export class SchemaToTypescript {
 
     public getTypeStore(): Record<string, JSONSchemaType<any>> {
         return this.typeStore;
+    }
+
+    public extendFromSchema(sourceSchema: JSONSchemaType<any>): void {
+        if (sourceSchema.properties) {
+            const rootSchema = this.schemaRefStore[this.rootName];
+            rootSchema.properties = {...rootSchema.properties, ...sourceSchema.properties}
+            this.processSchema(rootSchema, this.rootName, true);
+        }
     }
 
     private registerSchema(schema: JSONSchemaType<any>, id: string) {

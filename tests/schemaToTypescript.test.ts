@@ -150,5 +150,43 @@ interface User {
 
     });
 
+    it('should extend schema with additional properties', async () => {
+        const baseSchema: JSONSchemaType<{
+            name: string,
+        }> = {
+            type: "object",
+            required: ["name"],
+            properties: {
+                name: {type: "string", nullable: false}
+            },
+        };
+
+        const extensionSchema: JSONSchemaType<{ age?: number, email: string }> = {
+            type: "object",
+            properties: {
+                age: {type: "number", description: "Age of the person", nullable: true},
+                email: {type: "string", format: "email", description: "Email address of the person", nullable: false}
+            },
+            required: ['email'],
+        };
+
+        const converter = new SchemaToTypescript(baseSchema as JSONSchemaType<any>, "Person");
+        converter.extendFromSchema(extensionSchema as JSONSchemaType<any>);
+        const typeStore = converter.getTypeStore();
+
+        // Check if the base type has been extended
+        expect(typeStore).to.have.property("Person");
+        const personSchema = typeStore.Person as any;
+        expect(personSchema.properties).to.have.property("age");
+        expect(personSchema.properties).to.have.property("email");
+        expect(personSchema.properties.age.type).to.equal("number");
+        expect(personSchema.properties.email.type).to.equal("string");
+
+        // Optionally, generate TypeScript and check if the output includes the extended properties
+        const tsResult = converter.generateTypescript();
+        expect(tsResult).to.include("age?: number"); // Check for extended properties
+        expect(tsResult).to.include("email: string");
+    });
+
 
 });

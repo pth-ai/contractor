@@ -609,7 +609,6 @@ export class Contractor<MetaData extends MetaDataType> {
 
         await this.moderateLastMessage(messages);
         const oaiModel = promptSize + responseSize > 4000 ? largeModel(model) : model;
-        const tokensForRequest = maxTokens - (promptSize + responseSize);
 
         const request: ChatCompletionCreateParamsBase = {
             model: oaiModel,
