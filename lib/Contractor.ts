@@ -18,7 +18,8 @@ import {CreateEmbeddingResponse, Embedding, EmbeddingCreateParams} from "openai/
 import {OpenAIStreamChunkTransform, OpenAIStreamObject} from "./OpenAIStreamChunkTransform";
 import {AIClient} from "./AIClient";
 import {ICacher} from "./ICacher";
-
+import {ModerationCreateParams} from "openai/resources/moderations";
+import * as Core from "openai/core";
 
 type MetaDataType = {
     [k: string]: string
@@ -721,11 +722,13 @@ export class Contractor<MetaData extends MetaDataType> {
         }
     }
 
-    public async performModeration(input: string): Promise<void> {
+    public async performModeration(body: ModerationCreateParams, options?: Core.RequestOptions, logMetaData?: MetaData): Promise<void> {
         if (!this.settings?.disableModeration) {
-            const isFlagged = await this.aiClient.performModeration(input);
+            const response = await this.aiClient.performModeration(body, options);
+            const isFlagged = response.results[0].flagged;
+            this.logger?.debug(`request flagged due to moderation. [${JSON.stringify(response.results[0])}]`, logMetaData)
             if (isFlagged) {
-                throw new Error(`request flagged due to moderation. input: [${input.slice(0, 2000)}]`);
+                throw new Error(`request flagged due to moderation.`);
             }
         }
     }
@@ -734,8 +737,9 @@ export class Contractor<MetaData extends MetaDataType> {
 
     public getFunctionsMessagePlaceHolder = () => this.functionsMessagePlaceHolder;
 
-    private async moderateLastMessage(messages: RequestMessageFormat[]) {
-        await this.performModeration(messages.slice(-1).map(_ => _.content).join('\n'))
+    private async moderateLastMessage(messages: RequestMessageFormat[], logMetaData?: MetaData) {
+        const content = messages.slice(-1).map(_ => _.content).join('\n');
+        await this.performModeration({input: content}, undefined, logMetaData);
     }
 
     public singleFunction = async <T>(systemMessage: string,

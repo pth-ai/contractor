@@ -8,6 +8,7 @@ import * as Core from "openai/core";
 import {CreateEmbeddingResponse, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {Stream} from "openai/streaming";
 import {Logger} from "./Logger";
+import {ModerationCreateParams, ModerationCreateResponse} from "openai/resources/moderations";
 
 
 export interface IAIClient {
@@ -24,18 +25,18 @@ export interface IAIClient {
         [key: string]: string;
     }): Promise<CreateEmbeddingResponse>;
 
-    performModeration(userRequest: string, logMeta?: { [key: string]: string; }): Promise<IsFlagged>;
+    performModeration(body: ModerationCreateParams, options?: Core.RequestOptions, logMeta?: {
+        [key: string]: string;
+    }): Promise<ModerationCreateResponse>;
 
 }
-
-type IsFlagged = boolean;
 
 export interface EmbeddingClient {
     performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions): Core.APIPromise<CreateEmbeddingResponse>;
 }
 
 export interface ModerationClient {
-    performModeration(userRequest: string): Promise<IsFlagged>;
+    performModeration(body: ModerationCreateParams, options?: Core.RequestOptions): Core.APIPromise<ModerationCreateResponse>
 }
 
 export interface EnrichmentClient {
@@ -104,34 +105,68 @@ class ClientPool<T> {
         }
     }
 }
-
+type ClientProviders = EmbeddingClient | EnrichmentClient | ModerationClient;
+interface ClientProvider<T extends ClientProviders> {
+    clients: T[];
+    models: string[];
+    clientPoolSize?: number;
+}
 
 export class AIClient implements IAIClient {
-    private embeddingPool: ClientPool<EmbeddingClient>;
-    private moderationPool: ClientPool<ModerationClient>;
-    private enrichmentPool: ClientPool<EnrichmentClient>;
 
-    constructor(embeddingClients: EmbeddingClient[], moderationClients: ModerationClient[], enrichmentClients: EnrichmentClient[],
-                private logger?: Logger) {
-        this.embeddingPool = new ClientPool(embeddingClients);
-        this.moderationPool = new ClientPool(moderationClients);
-        this.enrichmentPool = new ClientPool(enrichmentClients);
+    private embeddingPoolMap: Map<string, ClientPool<EmbeddingClient>>;
+    private moderationPoolMap: Map<string, ClientPool<ModerationClient>>;
+    private enrichmentPoolMap: Map<string, ClientPool<EnrichmentClient>>;
 
+    constructor(embeddingProviders: ClientProvider<EmbeddingClient>[],
+                moderationProviders: ClientProvider<ModerationClient>[],
+                enrichmentProviders: ClientProvider<EnrichmentClient>[], private logger?: Logger) {
+
+        // Initialize pool maps
+        this.embeddingPoolMap = this.initializePoolMap<EmbeddingClient>(embeddingProviders);
+        this.moderationPoolMap = this.initializePoolMap<ModerationClient>(moderationProviders);
+        this.enrichmentPoolMap = this.initializePoolMap<EnrichmentClient>(enrichmentProviders);
     }
+
+    private initializePoolMap<T extends ClientProviders>(providers: ClientProvider<T>[]): Map<string, ClientPool<T>> {
+        const poolMap = new Map<string, ClientPool<T>>();
+        providers.forEach(provider => {
+            const pool = new ClientPool<T>(provider.clients);
+            provider.models.forEach(model => {
+                poolMap.set(model, pool); // Associate all models with the same pool
+            });
+        });
+        return poolMap;
+    }
+
 
     async performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions, logMeta?: {
         [key: string]: string;
     }): Promise<CreateEmbeddingResponse> {
         this.logger?.debug("performEmbedding", logMeta);
-        return await this.embeddingPool.execute(async (client) => {
+        const model = createEmbeddingRequest.model;
+        const pool = this.embeddingPoolMap.get(model); // Get the pool associated with the model
+        if (!pool) {
+            this.logger?.error(`No client pool available for model ${model}`, {}, logMeta)
+            throw new Error(`No client pool available for model ${model}`);
+        }
+        return await pool.execute(async (client) => {
             return await client.performEmbedding(createEmbeddingRequest, options);
-        });
+        })
     }
 
-    async performModeration(userRequest: string, logMeta?: { [key: string]: string; }): Promise<IsFlagged> {
+    async performModeration(body: ModerationCreateParams, options?: Core.RequestOptions, logMeta?: {
+        [key: string]: string;
+    }): Promise<ModerationCreateResponse> {
         this.logger?.debug("performModeration", logMeta);
-        return await this.moderationPool.execute(async (client) => {
-            return await client.performModeration(userRequest);
+        const model = body.model;
+        const pool = this.moderationPoolMap.get(model ?? 'text-moderation-latest'); // Get the pool associated with the model
+        if (!pool) {
+            this.logger?.error(`No client pool available for model ${model}`, {}, logMeta);
+            throw new Error(`No client pool available for model ${model}`);
+        }
+        return await pool.execute(async (client) => {
+            return await client.performModeration(body, options);
         });
     }
 
@@ -139,11 +174,17 @@ export class AIClient implements IAIClient {
         [key: string]: string;
     }): Promise<ChatCompletion> {
         this.logger?.debug("createChatCompletion", logMeta);
-        return await this.enrichmentPool.execute(async (client) => {
+        const model = createChatCompletionRequest.model;
+        const pool = this.enrichmentPoolMap.get(model); // Get the pool associated with the model
+        if (!pool) {
+            this.logger?.error(`No client pool available for model ${model}`, {}, logMeta);
+            throw new Error(`No client pool available for model ${model}`);
+        }
+        return await pool.execute(async (client) => {
             return await client.createChatCompletion({
                 ...createChatCompletionRequest,
                 stream: false,
-            }, options)
+            }, options);
         });
     }
 
@@ -151,11 +192,17 @@ export class AIClient implements IAIClient {
         [key: string]: string;
     }): Promise<Stream<ChatCompletionChunk>> {
         this.logger?.debug("createStreamingChatCompletion", logMeta);
-        return await this.enrichmentPool.execute(async (client) => {
+        const model = createChatCompletionRequest.model;
+        const pool = this.enrichmentPoolMap.get(model); // Get the pool associated with the model
+        if (!pool) {
+            this.logger?.error(`No client pool available for model ${model}`, {}, logMeta);
+            throw new Error(`No client pool available for model ${model}`);
+        }
+        return await pool.execute(async (client) => {
             return client.createStreamingChatCompletion({
                 ...createChatCompletionRequest,
                 stream: true,
-            } as ChatCompletionCreateParamsStreaming, options)
+            } as ChatCompletionCreateParamsStreaming, options);
         });
     }
 
