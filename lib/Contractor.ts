@@ -20,6 +20,10 @@ import {AIClient} from "./AIClient";
 import {ICacher} from "./ICacher";
 import {ModerationCreateParams} from "openai/resources/moderations";
 import * as Core from "openai/core";
+import {
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionUserMessageParam
+} from "openai/resources/chat/completions";
 
 type MetaDataType = {
     [k: string]: string
@@ -189,7 +193,11 @@ export class Contractor<MetaData extends MetaDataType> {
 
         const stream = await this.makeStreamingRequest(
             systemMessage.replace(regexp, responseFormatGen),
-            messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)})),
+            messages.map(m => m.role === 'user'
+                ? ({
+                    ...m,
+                    content: typeof m.content === 'string' ? m.content.replace(regexp, responseFormatGen) : m.content
+                }) : m),
             model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
 
         if (!stream) {
@@ -524,7 +532,12 @@ export class Contractor<MetaData extends MetaDataType> {
 
         const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
 
-        const _messages = messages.map(m => ({...m, content: m.content.replace(regexp, responseFormatGen)}));
+        const _messages = messages.map(m => m.role === 'user'
+            ? ({
+                ...m,
+                content: typeof m.content === 'string' ? m.content.replace(regexp, responseFormatGen) : m.content
+            })
+            : m);
         const {
             promptSize
         } = this.measureRequest(model, systemMessage, _messages, responseSize, maxTokens);
@@ -902,8 +915,8 @@ export class Contractor<MetaData extends MetaDataType> {
     private measureRequest(model: GPTModels, systemMessage: string, messages: RequestMessageFormat[], responseSize: number, maxTokens: number) {
         const promptSize = countTokens(systemMessage + messages.map(_ => _.content).join('\n'), model, this.logger);
         if (promptSize + responseSize > maxTokens) {
-            const m = `input too large. model [${model}] prmopt=[${promptSize}] response=[${responseSize}] max=[${maxTokens}]`;
-            console.warn(m);
+            const m = `warning: input too large. model [${model}] prmopt=[${promptSize}] response=[${responseSize}] max=[${maxTokens}]`;
+            this.logger?.error(m, {});
             throw new Error(m)
         }
         return {
@@ -950,7 +963,8 @@ export const createResultsWrapper = (funcs: ({
 } as unknown as JSONSchemaType<any>);
 
 
-export type RequestMessageFormat = {
-    role: 'user' | 'assistant' | 'system',
-    content: string
-};
+export type RequestMessageFormat =
+    | ChatCompletionSystemMessageParam
+    | ChatCompletionUserMessageParam
+    | ChatCompletionAssistantMessageParam
+    | ChatCompletionToolMessageParam;
