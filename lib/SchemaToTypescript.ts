@@ -53,7 +53,7 @@ export class SchemaToTypescript {
     public extendFromSchema(sourceSchema: JSONSchemaType<any>): void {
         if (sourceSchema.properties) {
             const rootSchema = this.schemaRefStore[this.rootName];
-            rootSchema.properties = {...rootSchema.properties, ...sourceSchema.properties}
+            rootSchema.properties = {...sourceSchema.properties, ...rootSchema.properties}
             this.processSchema(rootSchema, this.rootName, true);
         }
     }
