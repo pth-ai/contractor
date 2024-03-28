@@ -22,7 +22,7 @@ export class SchemaToTypescript {
                         const nestedTypeName = this.getNestedTypeName(propSchema, propName);
                         this.processSchema(propSchema, nestedTypeName, !propSchema.$id);
                     } else if (propSchema.type === "array" && propSchema.items) {
-                        const nestedSchema = propSchema.items
+                        const nestedSchema = propSchema.items;
                         const nestedTypeName = this.getNestedTypeName(nestedSchema, propName);
                         this.processSchema(nestedSchema, nestedTypeName, !nestedSchema.$id);
                     } else {
@@ -35,11 +35,11 @@ export class SchemaToTypescript {
             }
         } else if (schema.oneOf) {
             schema.oneOf.forEach((oo: any, idx: number) => {
-                this.processSchema(oo, this.getNestedTypeName(oo, 'oneOf' + idx), true)
+                this.processSchema(oo, this.getNestedTypeName(oo, 'oneOf' + idx), true);
             })
         } else if (schema.anyOf) {
             schema.anyOf.forEach((ao: any, idx: number) => {
-                this.processSchema(ao, this.getNestedTypeName(ao, 'anyOf' + idx), true)
+                this.processSchema(ao, this.getNestedTypeName(ao, 'anyOf' + idx), true);
             })
         }
 
@@ -193,7 +193,7 @@ export class SchemaToTypescript {
 
     private stringifyProperties(schema: JSONSchemaType<any>, prop: string, schemaTrail: JSONSchemaType<any>[]) {
         const propSchema = schema.properties[prop];
-        if (typeof propSchema === "boolean") return;
+        if (typeof propSchema === "boolean") return "";
         const type = this.getTypeString(propSchema, prop, schemaTrail);
         const description = propSchema.description ? ` // ${propSchema.description}` : '';
         return `    ${prop}${propSchema.nullable ? '?' : ''}: ${type} ${description}\n`;

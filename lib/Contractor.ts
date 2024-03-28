@@ -428,7 +428,6 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: 0,
-            top_p: 1,
             max_tokens: responseSize,
             ...requestOverrides,
             functions: (functions?.length ?? 0) > 0 ? functions : undefined,
@@ -553,7 +552,6 @@ export class Contractor<MetaData extends MetaDataType> {
                 ..._messages,
             ],
             temperature: 0,
-            top_p: 1,
             max_tokens: responseSize,
             ...requestOverrides,
         };
@@ -631,7 +629,6 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: 0,
-            top_p: 1,
             max_tokens: responseSize,
             ...requestOverrides,
         };
@@ -697,7 +694,6 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: 0,
-            top_p: 1,
             max_tokens: responseSize,
             ...requestOverrides,
         };
@@ -783,7 +779,6 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: 0,
-            top_p: 1,
             max_tokens: responseSize,
             functions: [gptFunction],
             ...requestOverrides,
