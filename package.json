@@ -14,7 +14,7 @@
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.13",
     "ajv": "^8.12.0",
-    "openai": "^4.29.2",
+    "openai": "^4.31.0",
     "spark-md5": "^3.0.2"
   },
   "devDependencies": {

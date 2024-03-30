@@ -81,28 +81,28 @@ export class SchemaToTypescript {
     }
 
     // to typescript string stuff
-    private getTypeString(schema: JSONSchemaType<any>, propName: string, schemaTrail: JSONSchemaType<any>[] = []): string {
+    private getTypeString(schema: JSONSchemaType<any>, propName: string, schemaTrail: JSONSchemaType<any>[] = [], indent: string = ''): string {
         if (schema.anyOf) {
             return schema.anyOf.map((schema: JSONSchemaType<any>) => {
                 let out = "";
                 if (schema.description && typeof schema.description === 'string') {
-                    out = this.genMultiLinecomment(schema.description, out);
+                    out = this.genMultiLinecomment(schema.description, out, indent);
                 }
                 for (const prop in schema.properties) {
-                    out += this.stringifyProperties(schema, prop, schemaTrail);
+                    out += this.stringifyProperties(schema, prop, schemaTrail, indent + '    ');
                 }
-                return `{\n${out}}`;
+                return `{\n${out}${indent}}`;
             }).join(' | ');
         } else if (schema.oneOf) {
             return schema.oneOf.map((schema: JSONSchemaType<any>) => {
                 let out = "";
                 if (schema.description && typeof schema.description === 'string') {
-                    out = this.genMultiLinecomment(schema.description, out);
+                    out = this.genMultiLinecomment(schema.description, out, indent);
                 }
                 for (const prop in schema.properties) {
-                    out += this.stringifyProperties(schema, prop, schemaTrail);
+                    out += this.stringifyProperties(schema, prop, schemaTrail, indent + '    ');
                 }
-                return `{\n${out}}`;
+                return `{\n${out}${indent}}`;
             }).join(' | ');
         } else if (schema.$id) {
             //return this.capitalizeFirstLetter(propName);
@@ -131,7 +131,7 @@ export class SchemaToTypescript {
                             return this.getNestedTypeName(schema.items, propName) + '[]';
                         } else {
                             const items = Array.isArray(schema.items) ? schema.items : [schema.items];
-                            const types = items.map(item => this.getTypeString(item, propName, [...schemaTrail, schema])).join(', ');
+                            const types = items.map(item => this.getTypeString(item, propName, [...schemaTrail, schema], indent + '    ')).join(', ');
                             return `${types}[];`;
                         }
                     }
@@ -140,9 +140,9 @@ export class SchemaToTypescript {
                     if (schema.properties) {
                         let out = "";
                         for (const prop in schema.properties) {
-                            out += this.stringifyProperties(schema, prop, schemaTrail);
+                            out += this.stringifyProperties(schema, prop, schemaTrail, indent + '    ');
                         }
-                        return `{\n${out}}`;
+                        return `{\n${out}${indent}}`;
                     } else {
                         return `${this.capitalizeFirstLetter(propName)};`;
                     }
@@ -157,46 +157,44 @@ export class SchemaToTypescript {
         }
     }
 
-    private genMultiLinecomment(description: string, out: string) {
-        out += ` /**\n`
+    private genMultiLinecomment(description: string, out: string, indent: string) {
+        out += `${indent}/**\n`
         description.split('\n')
-            .forEach((l: string) => out += `  * ${l}\n`);
-        out += `  */\n`
+            .forEach((l: string) => out += `${indent} * ${l}\n`);
+        out += `${indent} */\n`
         return out;
     }
 
-    private schemaToString(name: string): string {
+    private schemaToString(name: string, indent: string = ''): string {
         const schema = this.typeStore[name];
         let ts = "";
 
         if (schema.anyOf) {
-            ts += `type ${this.getNestedTypeName(schema, name)} =\n`
-            ts += this.getTypeString(schema, name, [schema]);
+            ts += `${indent}type ${this.getNestedTypeName(schema, name)} =\n`
+            ts += this.getTypeString(schema, name, [schema], indent + '    ');
             ts += ';\n';
         } else if (schema.oneOf) {
-            ts += `type ${this.getNestedTypeName(schema, name)} =\n`
-            ts += this.getTypeString(schema, name, [schema]);
+            ts += `${indent}type ${this.getNestedTypeName(schema, name)} =\n`
+            ts += this.getTypeString(schema, name, [schema], indent + '    ');
             ts += ';\n';
         } else {
-            ts += `interface ${this.getNestedTypeName(schema, name)} {\n`
-
+            ts += `${indent}interface ${this.getNestedTypeName(schema, name)} {\n`
             for (const prop in schema.properties) {
-                ts += this.stringifyProperties(schema, prop, [schema]);
+                ts += this.stringifyProperties(schema, prop, [schema], indent + '    ');
             }
-
-            ts += `}\n`;
+            ts += `${indent}}\n`;
         }
 
         // console.debug(`converting [${name}] schema [${JSON.stringify(schema)}] result=[${ts}]}`);
         return ts;
     }
 
-    private stringifyProperties(schema: JSONSchemaType<any>, prop: string, schemaTrail: JSONSchemaType<any>[]) {
+    private stringifyProperties(schema: JSONSchemaType<any>, prop: string, schemaTrail: JSONSchemaType<any>[], indent: string) {
         const propSchema = schema.properties[prop];
-        if (typeof propSchema === "boolean") return "";
-        const type = this.getTypeString(propSchema, prop, schemaTrail);
+        if (typeof propSchema === "boolean") return;
+        const type = this.getTypeString(propSchema, prop, schemaTrail, indent);
         const description = propSchema.description ? ` // ${propSchema.description}` : '';
-        return `    ${prop}${propSchema.nullable ? '?' : ''}: ${type} ${description}\n`;
+        return `${indent}${prop}${propSchema.nullable ? '?' : ''}: ${type} ${description}\n`;
     }
 
     public generateTypescript(): string {
