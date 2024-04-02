@@ -1,7 +1,7 @@
 import {JSONSchemaType} from "ajv";
 import {truthy} from "./utils";
 
-export class SchemaToTypescript {
+export class JSONSchemaToTypescriptConverter {
     private schemaRefStore: Record<string, JSONSchemaType<any>> = {};
     private typeStore: Record<string, JSONSchemaType<any>> = {};
 

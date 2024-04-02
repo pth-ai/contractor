@@ -11,7 +11,7 @@ import {OpenAIStreamToStreamedObjectTransform} from "./OpenAIStreamToStreamedObj
 import {StreamMITMTransform} from "./StreamMITMTransform";
 import * as JSON5 from "./json5";
 import ReadableStream = NodeJS.ReadableStream;
-import {SchemaToTypescript} from "./SchemaToTypescript";
+import {JSONSchemaToTypescriptConverter} from "./JSONSchemaToTypescriptConverter";
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
 import {CreateEmbeddingResponse, Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
@@ -189,7 +189,7 @@ export class Contractor<MetaData extends MetaDataType> {
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
 
-        const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
+        const responseFormatGen = new JSONSchemaToTypescriptConverter(createResultsWrapper(functions), 'Result').generateTypescript();
 
         const stream = await this.makeStreamingRequest(
             systemMessage.replace(regexp, responseFormatGen),
@@ -529,7 +529,7 @@ export class Contractor<MetaData extends MetaDataType> {
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
 
-        const responseFormatGen = new SchemaToTypescript(createResultsWrapper(functions), 'Result').generateTypescript();
+        const responseFormatGen = new JSONSchemaToTypescriptConverter(createResultsWrapper(functions), 'Result').generateTypescript();
 
         const _messages = messages.map(m => m.role === 'user'
             ? ({
