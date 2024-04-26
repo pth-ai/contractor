@@ -12,9 +12,9 @@
     "test": "NODE_ENV=test mocha --exit"
   },
   "dependencies": {
-    "@dqbd/tiktoken": "^1.0.13",
+    "@dqbd/tiktoken": "^1.0.14",
     "ajv": "^8.12.0",
-    "openai": "^4.31.0",
+    "openai": "^4.37.1",
     "spark-md5": "^3.0.2"
   },
   "devDependencies": {

@@ -39,10 +39,19 @@ export interface ModerationClient {
     performModeration(body: ModerationCreateParams, options?: Core.RequestOptions): Core.APIPromise<ModerationCreateResponse>
 }
 
-export interface EnrichmentClient {
+export interface EnrichmentClient extends ClientRecovery {
     createChatCompletion(createChatCompletionRequest: ChatCompletionCreateParamsBase, options?: Core.RequestOptions): Core.APIPromise<ChatCompletion>;
 
     createStreamingChatCompletion(createChatCompletionRequest: ChatCompletionCreateParamsBase, options?: Core.RequestOptions): Core.APIPromise<Stream<ChatCompletionChunk>>;
+}
+
+export interface ClientRecovery {
+    onChatCompletionFail?(error: any, origRequest: {
+        createChatCompletionRequest: ChatCompletionCreateParamsBase,
+        options?: Core.RequestOptions, logMeta?: {
+            [key: string]: string;
+        }
+    }): Promise<ChatCompletion>;
 }
 
 class ClientPool<T> {
@@ -105,7 +114,9 @@ class ClientPool<T> {
         }
     }
 }
+
 type ClientProviders = EmbeddingClient | EnrichmentClient | ModerationClient;
+
 interface ClientProvider<T extends ClientProviders> {
     clients: T[];
     models: string[];
@@ -181,10 +192,24 @@ export class AIClient implements IAIClient {
             throw new Error(`No client pool available for model ${model}`);
         }
         return await pool.execute(async (client) => {
-            return await client.createChatCompletion({
-                ...createChatCompletionRequest,
-                stream: false,
-            }, options);
+            try {
+                return await client.createChatCompletion({
+                    ...createChatCompletionRequest,
+                    stream: false,
+                }, options);
+            } catch (reason: any) {
+                if (client.onChatCompletionFail) {
+                    return await client.onChatCompletionFail(reason, {
+                        createChatCompletionRequest,
+                        options,
+                        logMeta
+                    });
+                } else {
+                    throw reason;
+                }
+
+            }
+
         });
     }
 
