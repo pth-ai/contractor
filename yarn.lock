@@ -141,10 +141,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:^4.3.14":
-  version: 4.3.14
-  resolution: "@types/chai@npm:4.3.14"
-  checksum: 10c0/7712594c1e457cb99c7227d0fe1afcbb900bbd1369494ec2d2b0d79a383057a09ab13d23d7b300287394b99995a8c017aa55e6b9a369b77910bc10310ba504af
+"@types/chai@npm:^4.3.16":
+  version: 4.3.16
+  resolution: "@types/chai@npm:4.3.16"
+  checksum: 10c0/745d4a9be429d5d86a7ab26064610b8957fe12dd80e94dc7d0707cf3db1c889e3ffe0d73d69bb15e6d376bf4462a7a75e9d8fc1051750b5d656d6cfe459829b7
   languageName: node
   linkType: hard
 
@@ -181,12 +181,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.19.31":
-  version: 18.19.31
-  resolution: "@types/node@npm:18.19.31"
+"@types/node@npm:^18.19.32":
+  version: 18.19.32
+  resolution: "@types/node@npm:18.19.32"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/bfebae8389220c0188492c82eaf328f4ba15e6e9b4abee33d6bf36d3b13f188c2f53eb695d427feb882fff09834f467405e2ed9be6aeb6ad4705509822d2ea08
+  checksum: 10c0/29d60ddd83a8216daf90d4bf101a6eff7fcf034b24bb89da90291017ec54c33b5ce30e7c125aef3f23f756037f0c382d15ebd434ad9c4536c8db8f1fb129f0ce
   languageName: node
   linkType: hard
 
@@ -264,15 +264,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^8.12.0":
-  version: 8.12.0
-  resolution: "ajv@npm:8.12.0"
+"ajv@npm:^8.13.0":
+  version: 8.13.0
+  resolution: "ajv@npm:8.13.0"
   dependencies:
-    fast-deep-equal: "npm:^3.1.1"
+    fast-deep-equal: "npm:^3.1.3"
     json-schema-traverse: "npm:^1.0.0"
     require-from-string: "npm:^2.0.2"
-    uri-js: "npm:^4.2.2"
-  checksum: 10c0/ac4f72adf727ee425e049bc9d8b31d4a57e1c90da8d28bcd23d60781b12fcd6fc3d68db5df16994c57b78b94eed7988f5a6b482fd376dc5b084125e20a0a622e
+    uri-js: "npm:^4.4.1"
+  checksum: 10c0/14c6497b6f72843986d7344175a1aa0e2c35b1e7f7475e55bc582cddb765fca7e6bf950f465dc7846f817776d9541b706f4b5b3fbedd8dfdeb5fce6f22864264
   languageName: node
   linkType: hard
 
@@ -527,15 +527,15 @@ __metadata:
     "@dqbd/tiktoken": "npm:^1.0.14"
     "@sinonjs/fake-timers": "npm:^11.2.2"
     "@tsconfig/node18": "npm:^18.2.4"
-    "@types/chai": "npm:^4.3.14"
+    "@types/chai": "npm:^4.3.16"
     "@types/mocha": "npm:^10.0.6"
-    "@types/node": "npm:^18.19.31"
+    "@types/node": "npm:^18.19.32"
     "@types/sinonjs__fake-timers": "npm:^8.1.5"
     "@types/spark-md5": "npm:^3.0.4"
-    ajv: "npm:^8.12.0"
+    ajv: "npm:^8.13.0"
     chai: "npm:^4.4.1"
     mocha: "npm:^10.4.0"
-    openai: "npm:^4.38.5"
+    openai: "npm:^4.42.0"
     spark-md5: "npm:^3.0.2"
     ts-node: "npm:^10.9.2"
     typescript: "npm:5.2.2"
@@ -681,7 +681,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-deep-equal@npm:^3.1.1":
+"fast-deep-equal@npm:^3.1.3":
   version: 3.1.3
   resolution: "fast-deep-equal@npm:3.1.3"
   checksum: 10c0/40dedc862eb8992c54579c66d914635afbec43350afbbe991235fdcb4e3a8d5af1b23ae7e79bef7d4882d0ecee06c3197488026998fb19f72dc95acff1d1b1d0
@@ -1396,9 +1396,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.38.5":
-  version: 4.38.5
-  resolution: "openai@npm:4.38.5"
+"openai@npm:^4.42.0":
+  version: 4.42.0
+  resolution: "openai@npm:4.42.0"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
@@ -1410,7 +1410,7 @@ __metadata:
     web-streams-polyfill: "npm:^3.2.1"
   bin:
     openai: bin/cli
-  checksum: 10c0/2145b54debf87c7c92b08cd04bfe510130011adbcfa03f36363a8539c88c040d2eb15f734a92173e23a8dfd92d8ba78fa3954ea6c44f1d5b450cdac50f26aea8
+  checksum: 10c0/803541109d008deef7b13ecc8eae2b3bce1a4ed0b6764c443a9f1822b0a7c085fcd59fc6d8317e9f99e46fc0174d88baaac079d121f179d5a983149cbbb14b12
   languageName: node
   linkType: hard
 
@@ -1835,7 +1835,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uri-js@npm:^4.2.2":
+"uri-js@npm:^4.4.1":
   version: 4.4.1
   resolution: "uri-js@npm:4.4.1"
   dependencies:
