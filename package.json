@@ -25,9 +25,9 @@
     "@types/node": "^20.12.10",
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@types/spark-md5": "^3.0.4",
-    "chai": "^5.1.0",
+    "chai": "^4.4.1",
     "mocha": "^10.4.0",
     "ts-node": "^10.9.2",
-    "typescript": "5.2.2"
+    "typescript": "5.4.5"
   }
 }
