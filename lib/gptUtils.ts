@@ -9,6 +9,8 @@ export type GPTModels =
     | 'gpt-3.5-turbo-16k-0613'
     | 'gpt-3.5-turbo-1106'
     | 'gpt-4-turbo-2024-04-09'
+    | 'gpt-4o'
+    | 'gpt-4o-2024-05-13'
     | string;
 export const largeModel = (model: GPTModels): GPTModels => {
     switch (model) {

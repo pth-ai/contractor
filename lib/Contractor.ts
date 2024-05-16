@@ -67,7 +67,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 private functionsMessagePlaceHolder: string,
                 private auditor?: IAuditor<MetaData>,
                 private cacher?: ICacher,
-                private maxTokensPerRequest: number = 8000,
+                private maxTokensPerRequest: number = 16000,
                 private streamObjectSeparator: string = defaultStreamDelimiterSeparator,
                 private logger?: Logger,
                 private settings?: { disableModeration?: boolean }) {
@@ -181,7 +181,7 @@ export class Contractor<MetaData extends MetaDataType> {
                                    model: GPTModels,
                                    functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                    transformObjectStream: (streamingObject: Result<any, any>) => Promise<any>,
-                                   responseSize: number = 800,
+                                   responseSize: number = 2000,
                                    logMetaData?: MetaData,
                                    requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                    maxTokens: number = this.maxTokensPerRequest): Promise<NodeJS.ReadableStream | undefined> {
@@ -252,7 +252,7 @@ export class Contractor<MetaData extends MetaDataType> {
                                  messages: RequestMessageFormat[],
                                  model: GPTModels,
                                  healer: (streamStr: string) => (string | undefined),
-                                 responseSize: number = 800,
+                                 responseSize: number = 2000,
                                  logMetaData?: MetaData,
                                  requestOverrides?: Partial<ChatCompletion>,
                                  maxTokens: number = this.maxTokensPerRequest,
@@ -361,7 +361,7 @@ export class Contractor<MetaData extends MetaDataType> {
                                               model: GPTModels,
                                               actionName: string,
                                               functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
-                                              responseSize: number = 800,
+                                              responseSize: number = 2000,
                                               logMetaData?: MetaData,
                                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                               maxTokens: number = this.maxTokensPerRequest): Promise<Result<any, any>> {
@@ -450,7 +450,7 @@ export class Contractor<MetaData extends MetaDataType> {
                               messages: RequestMessageFormat[],
                               model: GPTModels,
                               actionName: string,
-                              responseSize: number = 800,
+                              responseSize: number = 2000,
                               logMetaData?: MetaData,
                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                               maxTokens: number = this.maxTokensPerRequest): Promise<string> {
@@ -507,7 +507,7 @@ export class Contractor<MetaData extends MetaDataType> {
     async makeStreamingRequest(systemMessage: string,
                                messages: RequestMessageFormat[],
                                model: GPTModels,
-                               responseSize: number = 800,
+                               responseSize: number = 2000,
                                functions?: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                logMetaData?: MetaData,
                                requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
