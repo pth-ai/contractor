@@ -80,6 +80,8 @@ export class OpenAIStreamToStreamedObjectTransform extends Transform {
                         return {type: 'return-healed', value: root}
                     }
                 }
+
+                return undefined;
             });
 
             const validationFunction = (this.validateFunction instanceof Map

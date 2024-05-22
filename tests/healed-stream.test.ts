@@ -105,9 +105,6 @@ describe("healed streams", () => {
     });
 
     it("should handle content with markdown content block", async () => {
-        const testContent1 = `\`\`\`json
-{"ok": true}
-\`\`\``
 
         let resultText = '';
         let hasErrors = false;

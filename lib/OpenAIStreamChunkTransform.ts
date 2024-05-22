@@ -15,15 +15,8 @@ export interface OpenAIStreamObject {
 export class OpenAIStreamChunkTransform extends Transform {
     private functionName?: string = undefined;
 
-    // sometimes a non-complete chunk of the steam comes.. we keep it here for the next drop to prepend to..
-    private partialChunk: string | undefined = undefined;
-    private logger?: Logger;
-    private readonly logMetaData?: object;
-
     constructor(logger?: Logger, logMetaData?: object) {
         super({objectMode: true});
-        this.logger = logger;
-        this.logMetaData = logMetaData;
     }
 
     _transform(chunk: ChatCompletionChunk, encoding: string, callback: TransformCallback) {
