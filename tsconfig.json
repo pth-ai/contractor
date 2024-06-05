@@ -3,7 +3,8 @@
   "compilerOptions": {
     "declaration": true,
     "target": "es6",
-    "module": "commonjs",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "noImplicitAny": true,
     "outDir": "dist",
     "rootDir": ".",

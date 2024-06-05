@@ -648,11 +648,12 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002' | 'text-embedding-3-small' | string, logMetaData?: MetaData,): Promise<Embedding[]> => {
+    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002' | 'text-embedding-3-small' | string, dimensions?: number, logMetaData?: MetaData,): Promise<Embedding[]> => {
         const createEmbeddingRequest: EmbeddingCreateParams = {
             input: inputContent,
             model,
-            user: userId
+            user: userId,
+            dimensions,
         };
         const result: CreateEmbeddingResponse & {
             isFromCache?: boolean
