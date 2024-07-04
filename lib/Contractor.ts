@@ -659,7 +659,12 @@ export class Contractor<MetaData extends MetaDataType> {
             isFromCache?: boolean
         } = (await truthy(this.cacher, async _ => await _.retrieveEmbeddingFromCache(createEmbeddingRequest, logMetaData))) ??
             await this.aiClient.performEmbedding(createEmbeddingRequest, logMetaData);
-
+        // console.dir({
+        //     fromCache: result.isFromCache,
+        //     cacherExists: !!this.cacher,
+        //     req: createEmbeddingRequest,
+        //     testFromCache: await this.cacher?.retrieveEmbeddingFromCache(createEmbeddingRequest, logMetaData),
+        // }, {depth: 100});
         await this.auditor?.auditRequest({
             request: createEmbeddingRequest,
             resultRaw: result,
@@ -670,6 +675,7 @@ export class Contractor<MetaData extends MetaDataType> {
         });
 
         if (!result.isFromCache) {
+
             this.cacher?.cacheEmbedding(result, createEmbeddingRequest, logMetaData)
                 .then(_ignore => ({}));
         }

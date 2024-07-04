@@ -94,7 +94,6 @@ class ClientPool<T> {
         const availableClient = this.getNextAvailableClient();
         if (availableClient) {
             this.busyClients.add(availableClient);
-            availableClient
             return await request(availableClient)
                 .finally(() => {
                     this.busyClients.delete(availableClient);
