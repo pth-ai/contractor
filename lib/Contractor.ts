@@ -749,6 +749,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 : {data: {content: readContent}},
             requestType: 'blocking-request',
             requestSig: functionName ?? '',
+            isFromCache: response ? response.hasOwnProperty('isFromCache') : undefined,
             metaData: logMetaData,
         });
     }

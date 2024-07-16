@@ -8,6 +8,7 @@ export type AuditRecord<MetaData> = {
     requestType: string;
     requestSig: string;
     metaData?: MetaData;
+    isFromCache?: boolean;
 }
 
 export interface IAuditor<MetaData> {
