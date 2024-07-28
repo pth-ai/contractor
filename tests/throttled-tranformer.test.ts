@@ -1,6 +1,6 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
+import * as FakeTimers from "@sinonjs/fake-timers";
 import {Readable} from "stream";
-import {expect} from 'chai';
 import {waitForCondition} from "./testHelpers";
 import {ThrottledTransform, ThrottledTransformOptions, WriteTo, basicLogger} from "../lib";
 
@@ -10,8 +10,12 @@ describe("ThrottledTransform", () => {
     let clock: InstalledClock;
 
     beforeEach(async function () {
-        clock = this.clock;
+        clock = FakeTimers.install();
         clock.reset();
+    })
+
+    afterEach(async function () {
+        clock.uninstall();
     })
 
     // Helper function to create a readable stream
@@ -75,7 +79,7 @@ describe("ThrottledTransform", () => {
 
         await new Promise((resolve) => throttledTransform.on("finish", resolve));
 
-        expect(callTimes).to.equal(3)
+        expect(callTimes).toEqual(3)
     });
 
     it("should flush the queue when flushDebounceTimeMs is reached", async () => {
@@ -98,7 +102,7 @@ describe("ThrottledTransform", () => {
 
         await new Promise((resolve) => throttledTransform.on("finish", resolve));
 
-        expect(callTimes).to.equal(1)
+        expect(callTimes).toEqual(1)
     });
 
     it("should flush the queue when maxIdleTimeoutMs is reached", async () => {
@@ -125,7 +129,7 @@ describe("ThrottledTransform", () => {
 
         clock.tick(501);
 
-        expect(callTimes).to.equal(1)
+        expect(callTimes).toEqual(1)
     });
 
     it("should flush the queue when the window size is reached", async () => {
@@ -150,7 +154,7 @@ describe("ThrottledTransform", () => {
 
         await new Promise((resolve) => throttledTransform.on("finish", resolve));
 
-        expect(callTimes).to.equal(2);
+        expect(callTimes).toEqual(2);
     });
 
     it("should flush the queue after input is all transmitted", async () => {
@@ -174,7 +178,7 @@ describe("ThrottledTransform", () => {
         readableStream.pipe(throttledTransform);
 
         await new Promise((resolve) => throttledTransform.on("finish", resolve));
-        expect(callTimes).to.equal(1);
+        expect(callTimes).toEqual(1);
 
     });
 
@@ -207,7 +211,7 @@ describe("ThrottledTransform", () => {
 
         await sucessCondition;
 
-        expect(callTimes).to.be.most(1);
+        expect(callTimes).toBeLessThanOrEqual(1);
 
     });
 
@@ -256,8 +260,8 @@ describe("ThrottledTransform", () => {
 
         await sucessCondition;
 
-        expect(callTimes).to.be.most(1);
-        expect(isErrorInTTStream).to.equal(true);
+        expect(callTimes).toBeLessThanOrEqual(1);
+        expect(isErrorInTTStream).toEqual(true);
 
     });
 
@@ -301,8 +305,8 @@ describe("ThrottledTransform", () => {
 
         await sucessCondition;
 
-        expect(callTimes).to.be.most(1);
-        expect(isErrorInTTStream).to.equal(true);
+        expect(callTimes).toBeLessThanOrEqual(1);
+        expect(isErrorInTTStream).toEqual(true);
 
     });
 
@@ -332,7 +336,7 @@ describe("ThrottledTransform", () => {
 
         await sucessCondition;
 
-        expect(callTimes).to.equal(0);
+        expect(callTimes).toEqual(0);
     });
 
     it("should handle multiple chunks correctly, respecting window size and flushDebounceTimeMs", async () => {
@@ -365,7 +369,7 @@ describe("ThrottledTransform", () => {
         await successCondition;
 
 
-        expect(callTimes).to.equal(2);
+        expect(callTimes).toEqual(2);
     });
 
     it("should handle an empty input stream without errors", async () => {
@@ -396,7 +400,7 @@ describe("ThrottledTransform", () => {
 
         await successCondition;
 
-        expect(callTimes).to.equal(0);
+        expect(callTimes).toEqual(0);
     });
 
 

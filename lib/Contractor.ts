@@ -254,7 +254,7 @@ export class Contractor<MetaData extends MetaDataType> {
                                  healer: (streamStr: string) => (string | undefined),
                                  responseSize: number = 2000,
                                  logMetaData?: MetaData,
-                                 requestOverrides?: Partial<ChatCompletion>,
+                                 requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                  maxTokens: number = this.maxTokensPerRequest,
                                  manipulateResult?: (input: {
                                      healedStream: string

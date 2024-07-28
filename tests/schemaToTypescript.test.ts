@@ -1,5 +1,4 @@
 import {JSONSchemaType} from "ajv";
-import {expect} from "chai";
 import {JSONSchemaToTypescriptConverter} from "../lib/JSONSchemaToTypescriptConverter";
 import {reduceAndTrim} from "./testHelpers";
 
@@ -21,8 +20,8 @@ describe('JSONSchemaToTypescriptConverter', () => {
         const converter = new JSONSchemaToTypescriptConverter(schema as JSONSchemaType<any>, "SimpleObject");
         const typeStore = converter.getTypeStore();
 
-        expect(typeStore).to.have.property("SimpleObject");
-        expect(typeStore.SimpleObject).to.equal(schema);
+        expect(typeStore).toHaveProperty("SimpleObject");
+        expect(typeStore.SimpleObject).toEqual(schema);
     });
 
     it('should generate correct Typescript for simple object', async () => {
@@ -48,7 +47,7 @@ interface User {
 }
 `;
 
-        expect(reduceAndTrim(result)).to.equal(reduceAndTrim(expectedTS));
+        expect(reduceAndTrim(result)).toEqual(reduceAndTrim(expectedTS));
     });
 
     it('should process nested object schema', async () => {
@@ -75,7 +74,7 @@ interface User {
         };
         const converter = new JSONSchemaToTypescriptConverter(schema as JSONSchemaType<any>, "NestedObject");
         const typeStore = converter.getTypeStore();
-        expect(typeStore).to.have.property("NestedObject");
+        expect(typeStore).toHaveProperty("NestedObject");
     });
 
     it('should process array of items holding another schema object', async () => {
@@ -117,8 +116,8 @@ interface User {
         const converter = new JSONSchemaToTypescriptConverter(userSchema as JSONSchemaType<any>, "UserWithContactDetails");
         const typeStore = converter.getTypeStore();
 
-        expect(typeStore).to.have.property("UserWithContactDetails");
-        expect(typeStore).to.have.property("ContactDetails");
+        expect(typeStore).toHaveProperty("UserWithContactDetails");
+        expect(typeStore).toHaveProperty("ContactDetails");
 
     });
 
@@ -146,7 +145,7 @@ interface User {
         const converter = new JSONSchemaToTypescriptConverter(scheduleSchema as JSONSchemaType<any>, "Schedule");
         const typeStore = converter.getTypeStore();
 
-        expect(typeStore).to.have.property("Schedule");
+        expect(typeStore).toHaveProperty("Schedule");
 
     });
 
@@ -175,17 +174,17 @@ interface User {
         const typeStore = converter.getTypeStore();
 
         // Check if the base type has been extended
-        expect(typeStore).to.have.property("Person");
+        expect(typeStore).toHaveProperty("Person");
         const personSchema = typeStore.Person as any;
-        expect(personSchema.properties).to.have.property("age");
-        expect(personSchema.properties).to.have.property("email");
-        expect(personSchema.properties.age.type).to.equal("number");
-        expect(personSchema.properties.email.type).to.equal("string");
+        expect(personSchema.properties).toHaveProperty("age");
+        expect(personSchema.properties).toHaveProperty("email");
+        expect(personSchema.properties.age.type).toEqual("number");
+        expect(personSchema.properties.email.type).toEqual("string");
 
         // Optionally, generate TypeScript and check if the output includes the extended properties
         const tsResult = converter.generateTypescript();
-        expect(tsResult).to.include("age?: number"); // Check for extended properties
-        expect(tsResult).to.include("email: string");
+        expect(tsResult).toContain("age?: number"); // Check for extended properties
+        expect(tsResult).toContain("email: string");
     });
 
 

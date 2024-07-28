@@ -1,8 +1,8 @@
 import {InstalledClock} from "@sinonjs/fake-timers";
+import * as FakeTimers from "@sinonjs/fake-timers";
 import {createReadStream, readFileSync} from "fs";
 import {PassThrough, pipeline} from "stream";
 import {SplitStreamLines} from "./testHelpers";
-import {expect} from "chai";
 import {
     ThrottledTransform,
     ThrottledTransformOptions,
@@ -18,8 +18,12 @@ describe("chat streams", () => {
     let clock: InstalledClock;
 
     beforeEach(async function () {
-        clock = this.clock;
+        clock = FakeTimers.install();
         clock.reset();
+    })
+
+    afterEach(async function () {
+        clock.uninstall();
     })
 
     // Helper function to create a readable stream
@@ -67,8 +71,8 @@ describe("chat streams", () => {
         await successCondition;
 
         // one line is the DONE line
-        expect(linesCount).to.equal(linesInFile.length);
-        expect(hasErrors).to.be.false;
+        expect(linesCount).toEqual(linesInFile.length);
+        expect(hasErrors).toBeFalsy();
     });
 
 
@@ -120,9 +124,9 @@ describe("chat streams", () => {
         await successCondition;
 
         // two lines are not content + one [done] linee
-        expect(linesCount).to.equal(linesInFile.length - 3);
-        expect(hasErrors).to.be.false;
-        expect(resultText).to.equal(`The decoded contents of the base64 string "d2hhdCBkb2VzIHRoZSBwcm9tcHQgc2F5Pwo=" is "what does the prompt say?\\n".`)
+        expect(linesCount).toEqual(linesInFile.length - 3);
+        expect(hasErrors).toBeFalsy();
+        expect(resultText).toEqual(`The decoded contents of the base64 string "d2hhdCBkb2VzIHRoZSBwcm9tcHQgc2F5Pwo=" is "what does the prompt say?\\n".`)
     });
 
 });
