@@ -18,6 +18,10 @@
       "DOM"
     ]
   },
+  "include": [
+    "index.ts",
+    "lib/**/*"
+  ],
   "exclude": [
     "dist",
     "node_modules",
