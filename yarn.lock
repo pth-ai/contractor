@@ -380,10 +380,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dqbd/tiktoken@npm:^1.0.15":
-  version: 1.0.15
-  resolution: "@dqbd/tiktoken@npm:1.0.15"
-  checksum: 10c0/b367b91f4e099ba1939806a6f4367de7acae6efc8ecc1d8717bf6ef6c6e50393de3ee66acc4f26b4c0795ee28567cc3e594a357ef35eb9d66f895b22c2570ed3
+"@dqbd/tiktoken@npm:^1.0.16":
+  version: 1.0.16
+  resolution: "@dqbd/tiktoken@npm:1.0.16"
+  checksum: 10c0/ac3ad40b4ef1a849bf8d98160fed7330193c9e3ae3c260acd6d2e9f31aeb177551e2714647dd6620269142509381bf301c46bffa842cd55c09730dff22bb7818
   languageName: node
   linkType: hard
 
@@ -1470,7 +1470,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "contractor@workspace:."
   dependencies:
-    "@dqbd/tiktoken": "npm:^1.0.15"
+    "@dqbd/tiktoken": "npm:^1.0.16"
     "@sinonjs/fake-timers": "npm:^11.2.2"
     "@tsconfig/node18": "npm:^18.2.4"
     "@types/jest": "npm:^29.5.12"
@@ -1479,7 +1479,7 @@ __metadata:
     "@types/spark-md5": "npm:^3.0.4"
     ajv: "npm:^8.17.1"
     jest: "npm:^29.7.0"
-    openai: "npm:^4.53.2"
+    openai: "npm:^4.56.1"
     spark-md5: "npm:^3.0.2"
     ts-jest: "npm:^29.2.4"
     ts-node: "npm:^10.9.2"
@@ -3168,9 +3168,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.53.2":
-  version: 4.53.2
-  resolution: "openai@npm:4.53.2"
+"openai@npm:^4.56.1":
+  version: 4.56.1
+  resolution: "openai@npm:4.56.1"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
@@ -3179,9 +3179,14 @@ __metadata:
     form-data-encoder: "npm:1.7.2"
     formdata-node: "npm:^4.3.2"
     node-fetch: "npm:^2.6.7"
+  peerDependencies:
+    zod: ^3.23.8
+  peerDependenciesMeta:
+    zod:
+      optional: true
   bin:
     openai: bin/cli
-  checksum: 10c0/e2143cf473efbf26e91eb936f183af9ffb29b1f6e2a42174b31097ee2446b0ff6bebbc1b45c0ea8b658f1dae9fb7164dae781d6819f31279d95b5f67f56f898d
+  checksum: 10c0/862e3dd57cf83c74ac1b428d5a223b26ef566ac9842ba9a55a39a1baf7cac9144244a606ce9262757d7e62aded7919890369f4d3f44ab26fe4d043dea5cadc82
   languageName: node
   linkType: hard
 
