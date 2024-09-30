@@ -402,7 +402,7 @@ export class Contractor<MetaData extends MetaDataType> {
             result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request, logMetaData)) ?? await this.aiClient.createChatCompletion(request, logMetaData);
 
             const objStr = result.choices[0]?.message?.content;
-            assertIsDefined(objStr, 'response content not generated');
+            assertIsDefined(objStr, `response content not generated [${JSON.stringify(result)}]`);
 
             const objJson = JSON5.parse(objStr, undefined, (error, stack, root) => {
                 if (error.message.includes(`invalid character '`)) {
@@ -479,7 +479,7 @@ export class Contractor<MetaData extends MetaDataType> {
             result = await truthy(this.cacher, async _ => await _.retrieveRequestFromCache(request, logMetaData)) ?? await this.aiClient.createChatCompletion(request, logMetaData);
 
             const responseStr = result.choices[0]?.message?.content;
-            assertIsDefined(responseStr, 'response content not generated');
+            assertIsDefined(responseStr, `response content not generated [${JSON.stringify(result)}]`);
 
             if (!result.isFromCache) {
                 this.cacher?.cacheRequest(result, request, logMetaData)
