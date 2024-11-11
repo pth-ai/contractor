@@ -467,7 +467,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...(systemMessage ? [{role: 'system', content: systemMessage} as const] : []),
                 ...messages,
             ],
-            temperature: 0,
+            temperature: oaiModel.startsWith('o1') ? undefined : 0,
             max_tokens: oaiModel.startsWith('o1') ? undefined : responseSize,
             max_completion_tokens: oaiModel.startsWith('o1') ? responseSize : undefined,
             ...requestOverrides,
