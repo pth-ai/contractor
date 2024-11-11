@@ -380,10 +380,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dqbd/tiktoken@npm:^1.0.16":
-  version: 1.0.16
-  resolution: "@dqbd/tiktoken@npm:1.0.16"
-  checksum: 10c0/ac3ad40b4ef1a849bf8d98160fed7330193c9e3ae3c260acd6d2e9f31aeb177551e2714647dd6620269142509381bf301c46bffa842cd55c09730dff22bb7818
+"@dqbd/tiktoken@npm:^1.0.17":
+  version: 1.0.17
+  resolution: "@dqbd/tiktoken@npm:1.0.17"
+  checksum: 10c0/161f28cf9b26609b2397effcb9995990d2c52dd71efcd1c2505dad7df00c17cf8a94f14824fb8f54c8d09f9592fd1ee53f7e41c057cc8c15430b115af32cdeff
   languageName: node
   linkType: hard
 
@@ -1470,7 +1470,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "contractor@workspace:."
   dependencies:
-    "@dqbd/tiktoken": "npm:^1.0.16"
+    "@dqbd/tiktoken": "npm:^1.0.17"
     "@sinonjs/fake-timers": "npm:^11.2.2"
     "@tsconfig/node18": "npm:^18.2.4"
     "@types/jest": "npm:^29.5.12"
@@ -1479,11 +1479,11 @@ __metadata:
     "@types/spark-md5": "npm:^3.0.4"
     ajv: "npm:^8.17.1"
     jest: "npm:^29.7.0"
-    openai: "npm:^4.56.1"
+    openai: "npm:^4.71.1"
     spark-md5: "npm:^3.0.2"
     ts-jest: "npm:^29.2.4"
     ts-node: "npm:^10.9.2"
-    typescript: "npm:5.5.4"
+    typescript: "npm:5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -3168,9 +3168,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.56.1":
-  version: 4.56.1
-  resolution: "openai@npm:4.56.1"
+"openai@npm:^4.71.1":
+  version: 4.71.1
+  resolution: "openai@npm:4.71.1"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
@@ -3186,7 +3186,7 @@ __metadata:
       optional: true
   bin:
     openai: bin/cli
-  checksum: 10c0/862e3dd57cf83c74ac1b428d5a223b26ef566ac9842ba9a55a39a1baf7cac9144244a606ce9262757d7e62aded7919890369f4d3f44ab26fe4d043dea5cadc82
+  checksum: 10c0/468721223a68ae775dd6d7d2e3f32f7aa1ffb6d3e7fcb91c3851e7aaff75d0bf40b322a418dbc24aef34b86267821891a71f839f4cfce1a3e5bbed2084326314
   languageName: node
   linkType: hard
 
@@ -3848,23 +3848,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.5.4":
-  version: 5.5.4
-  resolution: "typescript@npm:5.5.4"
+"typescript@npm:5.6.3":
+  version: 5.6.3
+  resolution: "typescript@npm:5.6.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/422be60f89e661eab29ac488c974b6cc0a660fb2228003b297c3d10c32c90f3bcffc1009b43876a082515a3c376b1eefcce823d6e78982e6878408b9a923199c
+  checksum: 10c0/44f61d3fb15c35359bc60399cb8127c30bae554cd555b8e2b46d68fa79d680354b83320ad419ff1b81a0bdf324197b29affe6cc28988cd6a74d4ac60c94f9799
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.5.4#optional!builtin<compat/typescript>":
-  version: 5.5.4
-  resolution: "typescript@patch:typescript@npm%3A5.5.4#optional!builtin<compat/typescript>::version=5.5.4&hash=379a07"
+"typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>":
+  version: 5.6.3
+  resolution: "typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>::version=5.6.3&hash=74658d"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/73409d7b9196a5a1217b3aaad929bf76294d3ce7d6e9766dd880ece296ee91cf7d7db6b16c6c6c630ee5096eccde726c0ef17c7dfa52b01a243e57ae1f09ef07
+  checksum: 10c0/ac8307bb06bbfd08ae7137da740769b7d8c3ee5943188743bb622c621f8ad61d244767480f90fbd840277fbf152d8932aa20c33f867dea1bb5e79b187ca1a92f
   languageName: node
   linkType: hard
 

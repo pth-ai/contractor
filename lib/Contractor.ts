@@ -468,7 +468,8 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: 0,
-            max_tokens: responseSize,
+            max_tokens: oaiModel.startsWith('o1') ? undefined : responseSize,
+            max_completion_tokens: oaiModel.startsWith('o1') ? responseSize : undefined,
             ...requestOverrides,
         };
 
