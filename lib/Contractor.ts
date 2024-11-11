@@ -446,7 +446,7 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    async makeBlockingRequest(systemMessage: string,
+    async makeBlockingRequest(systemMessage: string | undefined,
                               messages: RequestMessageFormat[],
                               model: GPTModels,
                               actionName: string,
@@ -456,7 +456,7 @@ export class Contractor<MetaData extends MetaDataType> {
                               maxTokens: number = this.maxTokensPerRequest): Promise<string> {
         const {
             promptSize
-        } = this.measureRequest(model, systemMessage, messages, responseSize, maxTokens);
+        } = this.measureRequest(model, systemMessage ?? '', messages, responseSize, maxTokens);
 
         await this.moderateLastMessage(messages);
         const oaiModel = promptSize + responseSize > 4000 ? largeModel(model) : model;
@@ -464,7 +464,7 @@ export class Contractor<MetaData extends MetaDataType> {
         const request: ChatCompletionCreateParamsBase = {
             model: oaiModel,
             messages: [
-                {role: 'system', content: systemMessage},
+                ...(systemMessage ? [{role: 'system', content: systemMessage} as const] : []),
                 ...messages,
             ],
             temperature: 0,
@@ -486,7 +486,7 @@ export class Contractor<MetaData extends MetaDataType> {
                     .then(_ignore => ({}))
             }
 
-            await this.recordAudit(systemMessage, messages, result.model, responseStr, request, result,
+            await this.recordAudit(systemMessage ?? '', messages, result.model, responseStr, request, result,
                 actionName, undefined, {...logMetaData, isFromCache: result.isFromCache ? 'true' : undefined} as any);
 
             return responseStr;
@@ -494,7 +494,7 @@ export class Contractor<MetaData extends MetaDataType> {
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
 
-            await this.recordAudit(systemMessage, messages, model, "", request,
+            await this.recordAudit(systemMessage ?? '', messages, model, "", request,
                 result, undefined, err, logMetaData);
 
             throw new Error(`error performing blocking request [${actionName}]`);
