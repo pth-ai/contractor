@@ -446,20 +446,38 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    async makeBlockingRequest(systemMessage: string | undefined,
-                              messages: RequestMessageFormat[],
+    async makeBlockingRequest(requestSystemMessage: string,
+                              requestMessages: RequestMessageFormat[],
                               model: GPTModels,
                               actionName: string,
                               responseSize: number = 2000,
                               logMetaData?: MetaData,
                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                               maxTokens: number = this.maxTokensPerRequest): Promise<string> {
+
         const {
             promptSize
-        } = this.measureRequest(model, systemMessage ?? '', messages, responseSize, maxTokens);
+        } = this.measureRequest(model, requestSystemMessage, requestMessages, responseSize, maxTokens);
 
-        await this.moderateLastMessage(messages);
+        await this.moderateLastMessage(requestMessages);
         const oaiModel = promptSize + responseSize > 4000 ? largeModel(model) : model;
+
+        const {systemMessage, messages} = (() => {
+
+            const messages = oaiModel.startsWith('o1')
+                ? requestMessages.map((m, i) => i === 0
+                    ? {
+                        ...m,
+                        content: `## System instructions:\n${requestSystemMessage}\n\n## Task instructions:\n${m.content}`
+                    }
+                    : m)
+                : requestMessages;
+
+            return {
+                systemMessage: oaiModel.startsWith('o1') ? undefined : requestSystemMessage,
+                messages,
+            }
+        })();
 
         const request: ChatCompletionCreateParamsBase = {
             model: oaiModel,
