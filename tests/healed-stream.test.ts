@@ -9,9 +9,9 @@ import {
     WriteTo,
     basicLogger,
     StreamDebuggerTransform, StreamReaderTransform, StreamMITMTransform
-} from "../lib";
-import {OpenAIStreamToStreamedHealedTransform} from "../lib/OpenAIStreamToStreamedHealedTransform";
-import {OpenAIStreamTransform} from "../lib/OpenAIStreamTransform";
+} from "../src";
+import {OpenAIStreamToStreamedHealedTransform} from "../src/OpenAIStreamToStreamedHealedTransform";
+import {OpenAIStreamTransform} from "../src/OpenAIStreamTransform";
 
 const timeTickInitMS = 100;
 

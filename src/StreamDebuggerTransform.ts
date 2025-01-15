@@ -1,5 +1,5 @@
 import {Transform, TransformCallback} from "stream";
-import {Logger} from "./Logger";
+import {Logger} from "useful";
 
 export class StreamDebuggerTransform extends Transform {
     private name: string;

@@ -4,7 +4,6 @@ import {countTokens, GPTModels, largeModel} from "./gptUtils";
 import {assertIsDefined, truthy} from "./utils";
 import {IAuditor} from "./IAuditor";
 import {StreamListenerTransform} from "./StreamListenerTransform";
-import {Logger} from "./Logger";
 import {SchemaValidationCache} from "./SchemaValidationCache";
 import {ThrottledTransform} from "./ThrottleTransform";
 import {OpenAIStreamToStreamedObjectTransform} from "./OpenAIStreamToStreamedObjectTransform";
@@ -24,6 +23,7 @@ import {
     ChatCompletionAssistantMessageParam,
     ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionUserMessageParam
 } from "openai/resources/chat/completions";
+import {Logger} from "useful";
 
 type MetaDataType = {
     [k: string]: string
@@ -486,7 +486,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 ...messages,
             ],
             temperature: oaiModel.startsWith('o1') ? undefined : 0,
-            max_tokens: oaiModel.startsWith('o1') ? undefined : responseSize,
+            max_tokens: oaiModel.startsWith('o1') ? undefined : maxTokens,
             max_completion_tokens: oaiModel.startsWith('o1') ? responseSize : undefined,
             ...requestOverrides,
         };

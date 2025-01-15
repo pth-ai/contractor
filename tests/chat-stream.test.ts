@@ -7,10 +7,9 @@ import {
     ThrottledTransform,
     ThrottledTransformOptions,
     WriteTo,
-    basicLogger,
-    StreamDebuggerTransform, StreamReaderTransform
-} from "../lib";
-import {OpenAIStreamTransform} from "../lib/OpenAIStreamTransform";
+    StreamDebuggerTransform, StreamReaderTransform, basicLogger
+} from "../src";
+import {OpenAIStreamTransform} from "../src/OpenAIStreamTransform";
 
 const timeTickInitMS = 100;
 

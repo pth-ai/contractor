@@ -1,5 +1,5 @@
 import {JSONSchemaType} from "ajv";
-import {JSONSchemaToTypescriptConverter} from "../lib/JSONSchemaToTypescriptConverter";
+import {JSONSchemaToTypescriptConverter} from "../src/JSONSchemaToTypescriptConverter";
 import {reduceAndTrim} from "./testHelpers";
 
 describe('JSONSchemaToTypescriptConverter', () => {

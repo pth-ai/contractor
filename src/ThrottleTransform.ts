@@ -1,6 +1,5 @@
 import {Transform, TransformCallback} from "stream";
-
-import {Logger} from "./Logger";
+import {Logger} from "useful";
 
 export type ThrottledTransformOptions = {
     name: string;

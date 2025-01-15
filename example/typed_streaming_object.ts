@@ -2,14 +2,13 @@ import {Configuration, OpenAIApi} from "openai";
 import {JSONSchemaType} from "ajv";
 import {pipeline} from "stream";
 import {Contractor, OpenAIClient, StreamDebuggerTransform} from "contractor";
-import {prefixedLogger,} from "../lib";
+import {createLoggerForFile} from "useful";
 
-
+const logger = createLoggerForFile();
 export const typedStreamingObject = () => {
 
     const apiKey = process.env.OPENAI_API_KEY;
 
-    const logger = prefixedLogger('typedStreamingObject');
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY env var not provided');
     }

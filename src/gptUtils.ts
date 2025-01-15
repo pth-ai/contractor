@@ -1,6 +1,5 @@
 import {encoding_for_model} from "@dqbd/tiktoken";
-
-import {Logger} from "./Logger";
+import {Logger} from "useful";
 
 
 export type GPTModels =

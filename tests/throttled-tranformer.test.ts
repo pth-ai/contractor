@@ -2,7 +2,7 @@ import {InstalledClock} from "@sinonjs/fake-timers";
 import * as FakeTimers from "@sinonjs/fake-timers";
 import {Readable} from "stream";
 import {waitForCondition} from "./testHelpers";
-import {ThrottledTransform, ThrottledTransformOptions, WriteTo, basicLogger} from "../lib";
+import {ThrottledTransform, ThrottledTransformOptions, WriteTo, basicLogger} from "../src";
 
 const timeTickInitMS = 100;
 

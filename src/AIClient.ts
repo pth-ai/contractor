@@ -7,8 +7,8 @@ import {
 import * as Core from "openai/core";
 import {CreateEmbeddingResponse, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {Stream} from "openai/streaming";
-import {Logger} from "./Logger";
 import {ModerationCreateParams, ModerationCreateResponse} from "openai/resources/moderations";
+import {Logger} from "useful";
 
 
 export interface IAIClient {

@@ -1,7 +1,7 @@
 import {Transform, TransformCallback} from "stream";
 
-import {Logger} from "./Logger";
 import {ChatCompletionChunk} from "openai/resources/chat/completions";
+import {Logger} from "useful";
 
 export interface OpenAIStreamObject {
     functionName?: string;
