@@ -1,4 +1,4 @@
-import {JSONSchemaType} from "ajv";
+import type {JSONSchemaType} from "ajv";
 import {truthy} from "./utils";
 
 export class JSONSchemaToTypescriptConverter {
