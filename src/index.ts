@@ -13,4 +13,5 @@ export * from "./StreamMITMTransform";
 export * from "./SimpleStreamTransform";
 export * from "./ThrottleTransform";
 export * from "./StreamReaderTransform";
+export * from "./ICacher";
 export * as JSON5 from "./json5";
