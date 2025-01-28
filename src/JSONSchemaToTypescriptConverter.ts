@@ -193,7 +193,7 @@ export class JSONSchemaToTypescriptConverter {
         const propSchema = schema.properties[prop];
         if (typeof propSchema === "boolean") return;
         const type = this.getTypeString(propSchema, prop, schemaTrail, indent);
-        const description = propSchema.description ? ` // ${propSchema.description}` : '';
+        const description = propSchema.description ? ` // ${propSchema.description.split("\n").join("\n //")}` : '';
         return `${indent}${prop}${propSchema.nullable ? '?' : ''}: ${type} ${description}\n`;
     }
 

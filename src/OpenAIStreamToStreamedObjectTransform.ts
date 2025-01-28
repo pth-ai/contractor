@@ -1,9 +1,9 @@
 import {Transform, TransformCallback} from "stream";
 import {ValidateFunction} from "ajv";
-import {OpenAIStreamObject} from "./OpenAIStreamTransform";
 import {assertIsDefined, truthy} from "./utils";
 import * as JSON5 from './json5';
 import {Logger} from "useful";
+import {OpenAIStreamObject} from "./OpenAIStreamObject";
 
 export interface StreamedObject<T> {
     stream: T;

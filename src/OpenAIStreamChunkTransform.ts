@@ -3,10 +3,7 @@ import {Transform, TransformCallback} from "stream";
 import {ChatCompletionChunk} from "openai/resources/chat/completions";
 import {Logger} from "useful";
 
-export interface OpenAIStreamObject {
-    functionName?: string;
-    chunk: string;
-}
+import {OpenAIStreamObject} from "./OpenAIStreamObject";
 
 /**
  * extracts object from OpenAI lines format ("data: ...")

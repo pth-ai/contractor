@@ -1,11 +1,7 @@
 import {Transform, TransformCallback} from "stream";
 import * as JSON5 from './json5';
 import {Logger} from "useful";
-
-export interface OpenAIStreamObject {
-    functionName?: string;
-    chunk: string;
-}
+import {OpenAIStreamObject} from "./OpenAIStreamObject";
 
 /**
  * extracts object from OpenAI lines format ("data: ...")

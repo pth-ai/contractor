@@ -1,6 +1,6 @@
 import {Transform, TransformCallback} from "stream";
-import {OpenAIStreamObject} from "./OpenAIStreamTransform";
 import {Logger} from "useful";
+import {OpenAIStreamObject} from "./OpenAIStreamObject";
 
 /**
  * this class transforms a stream of {OpenAIStreamObject} to {StreamedObject<T>>}
