@@ -14,7 +14,7 @@ import {JSONSchemaToTypescriptConverter} from "./JSONSchemaToTypescriptConverter
 import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
 import {CreateEmbeddingResponse, Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
-import {OpenAIStreamChunkTransform, OpenAIStreamObject} from "./OpenAIStreamChunkTransform";
+import {OpenAIStreamChunkTransform} from "./OpenAIStreamChunkTransform";
 import {AIClient} from "./AIClient";
 import {ICacher} from "./ICacher";
 import {ModerationCreateParams} from "openai/resources/moderations";
@@ -24,6 +24,7 @@ import {
     ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionUserMessageParam
 } from "openai/resources/chat/completions";
 import {Logger} from "useful";
+import {OpenAIStreamObject} from "./OpenAIStreamObject";
 
 type MetaDataType = {
     [k: string]: string
