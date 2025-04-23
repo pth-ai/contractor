@@ -710,7 +710,7 @@ export class Contractor<MetaData extends MetaDataType> {
                     const validator = this.schemaValidationCache.getValidator(functionSchema);
                     if (validator(root)) {
                         // we did what we could.. object looks good enough..
-                        return {type: 'return-healed', value: root};
+                        return {type: 'return-healed', value: root} as const;
                     } else {
                         throw new Error(`function arguments did not pass validation [${JSON.stringify(validator.errors)}]`);
                     }

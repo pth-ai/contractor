@@ -32,7 +32,7 @@ export interface IAIClient {
 }
 
 export interface EmbeddingClient {
-    performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions): Core.APIPromise<CreateEmbeddingResponse>;
+    performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions<EmbeddingCreateParams>): Core.APIPromise<CreateEmbeddingResponse>;
 }
 
 export interface ModerationClient {
@@ -150,7 +150,7 @@ export class AIClient implements IAIClient {
     }
 
 
-    async performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions, logMeta?: {
+    async performEmbedding(createEmbeddingRequest: EmbeddingCreateParams, options?: Core.RequestOptions<EmbeddingCreateParams>, logMeta?: {
         [key: string]: string;
     }): Promise<CreateEmbeddingResponse> {
         this.logger?.debug("performEmbedding", logMeta);
