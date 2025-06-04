@@ -11,7 +11,7 @@ export class StreamListenerTransform<T> extends Transform {
         this.consumer = consumer;
     }
 
-    _transform(chunk: T, encoding: string, callback: TransformCallback) {
+    _transform(chunk: T, _encoding: string, callback: TransformCallback) {
         this.consumer(chunk);
         this.push(chunk);
         callback();

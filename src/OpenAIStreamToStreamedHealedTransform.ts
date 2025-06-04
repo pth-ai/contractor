@@ -18,7 +18,7 @@ export class OpenAIStreamToStreamedHealedTransform extends Transform {
         this.healer = healer;
     }
 
-    _transform(chunk: any, encoding: string, callback: TransformCallback) {
+    _transform(chunk: any, _encoding: string, callback: TransformCallback) {
         // Transform the data to uppercase
         const incoming = chunk as OpenAIStreamObject[];
         if (!Array.isArray(incoming)) {

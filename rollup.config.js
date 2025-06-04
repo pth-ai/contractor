@@ -14,7 +14,11 @@ export default [
             name: 'contractor' // Replace with your library's name
         },
         plugins: [
-            typescript({tsconfig: './tsconfig.browser.json'}),
+            typescript({
+                tsconfig: './tsconfig.browser.json',
+                declaration: true,
+                declarationDir: 'dist/browser',
+            }),
             resolve(),
             commonjs(),
             json(),
@@ -24,12 +28,30 @@ export default [
     // Node.js build
     {
         input: 'src/index.ts',
-        output: {
-            file: 'dist/node/index.js',
-            format: 'cjs'
-        },
+        output: [
+            {
+                file: 'dist/node/index.cjs.js',
+                format: 'cjs',
+                sourcemap: true,
+            },
+            {
+                file: 'dist/node/index.esm.js',
+                format: 'esm',
+                sourcemap: true,
+            },
+            {
+                file: 'dist/node/index.umd.js',
+                format: 'umd',
+                name: 'contractor',
+                sourcemap: true,
+            },
+        ],
         plugins: [
-            typescript({tsconfig: './tsconfig.node.json'}),
+            typescript({
+                tsconfig: './tsconfig.node.json',
+                declaration: true,
+                declarationDir: 'dist/node',
+            }),
             resolve(),
             commonjs(),
             json(),

@@ -13,7 +13,7 @@ export class StreamDebuggerTransform extends Transform {
         this.logger = logger;
     }
 
-    _transform(chunk: any, encoding: string, callback: TransformCallback) {
+    _transform(chunk: any, _encoding: string, callback: TransformCallback) {
         (this.logger?.debug ?? console.debug)(`[${this.name}] passing data [${JSON.stringify(chunk)}]`);
         if (!this.terminateStream) {
             this.push(chunk);

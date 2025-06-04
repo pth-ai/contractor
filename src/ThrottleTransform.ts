@@ -27,7 +27,7 @@ export class ThrottledTransform<T> extends Transform {
         this.options = options;
     }
 
-    _transform(chunk: T, encoding: string, callback: TransformCallback) {
+    _transform(chunk: T, _encoding: string, callback: TransformCallback) {
         this.logger?.debug('_transform called', {name: this.options.name});
         this.queue.push(chunk);
 

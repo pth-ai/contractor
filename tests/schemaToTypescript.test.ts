@@ -5,6 +5,7 @@ import {reduceAndTrim} from "./testHelpers";
 describe('JSONSchemaToTypescriptConverter', () => {
 
     it('should process simple object schema', async () => {
+        //@ts-ignore
         const schema: JSONSchemaType<{
             name: string,
             age?: number

@@ -11,9 +11,7 @@ import {StreamMITMTransform} from "./StreamMITMTransform";
 import * as JSON5 from "./json5";
 import ReadableStream = NodeJS.ReadableStream;
 import {JSONSchemaToTypescriptConverter} from "./JSONSchemaToTypescriptConverter";
-import {OpenAIStreamToStreamedHealedTransform} from "./OpenAIStreamToStreamedHealedTransform";
 import {ChatCompletion, ChatCompletionCreateParamsBase} from "openai/resources/chat/completions";
-import {CreateEmbeddingResponse, Embedding, EmbeddingCreateParams} from "openai/resources/embeddings";
 import {OpenAIStreamChunkTransform} from "./OpenAIStreamChunkTransform";
 import {AIClient} from "./AIClient";
 import {ICacher} from "./ICacher";
@@ -30,19 +28,6 @@ type MetaDataType = {
     [k: string]: string
 };
 
-export type ChatCompletionFunctionsWithTypes2<T, N extends string> = {
-    readonly name: N;
-    readonly description: string;
-    readonly parameters: JSONSchemaType<Wrapper<N, T>>;
-    readonly partialStreamPath?: string[];
-};
-
-export type ResultWrapped<T, N extends string> = {
-    readonly name: N;
-    readonly entry: ChatCompletionFunctionsWithTypes2<T, N>;
-    readonly value: T
-}
-
 export type ChatCompletionFunctionsWithTypes<T, N extends string> = {
     readonly name: N;
     readonly description: string;
@@ -57,6 +42,20 @@ export type Result<T, N extends string> = {
 }
 
 export const defaultStreamDelimiterSeparator = '|{-*-}|';
+
+// Helper type to extract the Result union from a tuple of function definitions
+export type FunctionsResultUnion<Fns extends readonly ChatCompletionFunctionsWithTypes<any, string>[]> =
+// 1. Get the union of all function definition types in the input tuple `Fns`
+    Fns[number] extends infer FuncDef
+        // 2. For each type `FuncDef` in that union...
+        ? FuncDef extends ChatCompletionFunctionsWithTypes<infer T, infer N>
+            // 3. ...if it matches the structure, create the corresponding Result<T, N> type
+            ? Result<T, N>
+            // 4. Otherwise, yield `never` (shouldn't happen with proper constraints)
+            : never
+        // 5. If the input wasn't a valid function definition union, yield `never`
+        : never;
+
 
 export class Contractor<MetaData extends MetaDataType> {
 
@@ -76,117 +75,21 @@ export class Contractor<MetaData extends MetaDataType> {
         this.schemaValidationCache = new SchemaValidationCache();
     }
 
-    // Define the function implementation
-    streamingFunction<T1, N1 extends string, OUT>(systemMessage: string,
-                                                  messages: RequestMessageFormat[],
-                                                  model: GPTModels,
-                                                  functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
-                                                  transformObjectStream: (streamingObject: Result<T1, N1>) => Promise<OUT>,
-                                                  responseSize?: number,
-                                                  logMetaData?: MetaData,
-                                                  requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                  maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
 
-    streamingFunction<T1, T2, N1 extends string, N2 extends string, OUT>(systemMessage: string,
-                                                                         messages: RequestMessageFormat[],
-                                                                         model: GPTModels,
-                                                                         functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
-                                                                         transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2>) => Promise<OUT>,
-                                                                         responseSize?: number,
-                                                                         logMetaData?: MetaData,
-                                                                         requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                         maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string, OUT>(systemMessage: string,
-                                                                                                messages: RequestMessageFormat[],
-                                                                                                model: GPTModels,
-                                                                                                functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
-                                                                                                transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3>) => Promise<OUT>,
-                                                                                                responseSize?: number,
-                                                                                                logMetaData?: MetaData,
-                                                                                                requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string, OUT>(systemMessage: string,
-                                                                                                                       messages: RequestMessageFormat[],
-                                                                                                                       model: GPTModels,
-                                                                                                                       functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
-                                                                                                                       transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4>) => Promise<OUT>,
-                                                                                                                       responseSize?: number,
-                                                                                                                       logMetaData?: MetaData,
-                                                                                                                       requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                       maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, OUT>(systemMessage: string,
-                                                                                                                                              messages: RequestMessageFormat[],
-                                                                                                                                              model: GPTModels,
-                                                                                                                                              functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
-                                                                                                                                              transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5>) => Promise<OUT>,
-                                                                                                                                              responseSize?: number,
-                                                                                                                                              logMetaData?: MetaData,
-                                                                                                                                              requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                              maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, T6, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, OUT>(systemMessage: string,
-                                                                                                                                                                     messages: RequestMessageFormat[],
-                                                                                                                                                                     model: GPTModels,
-                                                                                                                                                                     functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>],
-                                                                                                                                                                     transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6>) => Promise<OUT>,
-                                                                                                                                                                     responseSize?: number,
-                                                                                                                                                                     logMetaData?: MetaData,
-                                                                                                                                                                     requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                                     maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, T6, T7, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, OUT>(systemMessage: string,
-                                                                                                                                                                                            messages: RequestMessageFormat[],
-                                                                                                                                                                                            model: GPTModels,
-                                                                                                                                                                                            functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>],
-                                                                                                                                                                                            transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7>) => Promise<OUT>,
-                                                                                                                                                                                            responseSize?: number,
-                                                                                                                                                                                            logMetaData?: MetaData,
-                                                                                                                                                                                            requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                                                            maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, OUT>(systemMessage: string,
-                                                                                                                                                                                                                   messages: RequestMessageFormat[],
-                                                                                                                                                                                                                   model: GPTModels,
-                                                                                                                                                                                                                   functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>],
-                                                                                                                                                                                                                   transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8>) => Promise<OUT>,
-                                                                                                                                                                                                                   responseSize?: number,
-                                                                                                                                                                                                                   logMetaData?: MetaData,
-                                                                                                                                                                                                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                                                                                   maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, OUT>(systemMessage: string,
-                                                                                                                                                                                                                                          messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                          model: GPTModels,
-                                                                                                                                                                                                                                          functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>],
-                                                                                                                                                                                                                                          transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9>) => Promise<OUT>,
-                                                                                                                                                                                                                                          responseSize?: number,
-                                                                                                                                                                                                                                          logMetaData?: MetaData,
-                                                                                                                                                                                                                                          requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                                                                                                          maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    streamingFunction<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string, N6 extends string, N7 extends string, N8 extends string, N9 extends string, N10 extends string, OUT>(systemMessage: string,
-                                                                                                                                                                                                                                                                   messages: RequestMessageFormat[],
-                                                                                                                                                                                                                                                                   model: GPTModels,
-                                                                                                                                                                                                                                                                   functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>, ChatCompletionFunctionsWithTypes<T6, N6>, ChatCompletionFunctionsWithTypes<T7, N7>, ChatCompletionFunctionsWithTypes<T8, N8>, ChatCompletionFunctionsWithTypes<T9, N9>, ChatCompletionFunctionsWithTypes<T10, N10>],
-                                                                                                                                                                                                                                                                   transformObjectStream: (streamingObject: Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | Result<T6, N6> | Result<T7, N7> | Result<T8, N8> | Result<T9, N9> | Result<T10, N10>) => Promise<OUT>,
-                                                                                                                                                                                                                                                                   responseSize?: number,
-                                                                                                                                                                                                                                                                   logMetaData?: MetaData,
-                                                                                                                                                                                                                                                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                                                                                                                                   maxTokens?: number): Promise<NodeJS.ReadableStream | undefined>;
-
-    public async streamingFunction(systemMessage: string,
-                                   messages: RequestMessageFormat[],
-                                   model: GPTModels,
-                                   functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
-                                   transformObjectStream: (streamingObject: Result<any, any>) => Promise<any>,
-                                   responseSize: number = 2000,
-                                   logMetaData?: MetaData,
-                                   requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                   maxTokens: number = this.maxTokensPerRequest): Promise<NodeJS.ReadableStream | undefined> {
-
+    public async streamingFunction<
+        F extends readonly ChatCompletionFunctionsWithTypes<any, string>[],
+        OUT
+    >(
+        systemMessage: string,
+        messages: RequestMessageFormat[],
+        model: GPTModels,
+        functions: F,
+        transformObjectStream: (streamingObject: FunctionsResultUnion<F>) => Promise<OUT>,
+        responseSize: number = 2000,
+        logMetaData?: MetaData,
+        requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
+        maxTokens: number = this.maxTokensPerRequest
+    ): Promise<NodeJS.ReadableStream | undefined> {
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
 
@@ -199,7 +102,7 @@ export class Contractor<MetaData extends MetaDataType> {
                     ...m,
                     content: typeof m.content === 'string' ? m.content.replace(regexp, responseFormatGen) : m.content
                 }) : m),
-            model, responseSize, functions, logMetaData, requestOverrides, maxTokens);
+            model, responseSize, logMetaData, requestOverrides, maxTokens);
 
         if (!stream) {
             return undefined;
@@ -217,7 +120,6 @@ export class Contractor<MetaData extends MetaDataType> {
         const validators = new Map(functions.map(({
                                                       name,
                                                       parameters,
-                                                      description
                                                   }) => ([name, this.schemaValidationCache.getValidator(parameters)])));
         const objectTransform = new OpenAIStreamToStreamedObjectTransform(
             validators,
@@ -235,7 +137,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 name: functionName,
                 entry: functions.find(_ => _.name === functionName)!,
                 value: input.value,
-            })
+            } as FunctionsResultUnion<F>)
         }, this.streamObjectSeparator)
 
         return pipeline(stream,
@@ -249,123 +151,19 @@ export class Contractor<MetaData extends MetaDataType> {
             })
     }
 
-    public async streamingHealer(systemMessage: string,
-                                 messages: RequestMessageFormat[],
-                                 model: GPTModels,
-                                 healer: (streamStr: string) => (string | undefined),
-                                 responseSize: number = 2000,
-                                 logMetaData?: MetaData,
-                                 requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                 maxTokens: number = this.maxTokensPerRequest,
-                                 manipulateResult?: (input: {
-                                     healedStream: string
-                                 }) => any,
-                                 onSuccessFinished?: () => void): Promise<NodeJS.ReadableStream | undefined> {
-
-        const stream = await this.makeStreamingRequest(
-            systemMessage,
-            messages,
-            model,
-            responseSize,
-            undefined,
-            logMetaData,
-            requestOverrides,
-            maxTokens);
-
-        if (!stream) {
-            return undefined;
-        }
-
-        const throttler = new ThrottledTransform(
-            {
-                name: 'task creation thr',
-                flushDebounceTimeMs: 1000,
-                maxIdleTimeoutMs: 20000,
-                windowSize: 10,
-            },
-        );
-
-        const healedTransform = new OpenAIStreamToStreamedHealedTransform(healer, this.logger)
-
-        const objectStreamTransformer = new StreamMITMTransform<string, unknown>(
-            async (input) => {
-                return manipulateResult ? manipulateResult({healedStream: input}) : {healedStream: manipulateResult};
-            }, this.streamObjectSeparator,
-            onSuccessFinished
-        )
-
-        return pipeline(
-            stream,
-            throttler,
-            healedTransform,
-            objectStreamTransformer,
-            err => {
-                if (err) {
-                    this.logger?.error('error while processing stream interim results', err, logMetaData);
-                }
-            })
-    }
-
-    makeBlockingRequestWithFunctionsAlt<T1, N1 extends string>(systemMessage: string,
-                                                               messages: RequestMessageFormat[],
-                                                               model: GPTModels,
-                                                               actionName: string,
-                                                               functions: [ChatCompletionFunctionsWithTypes<T1, N1>],
-                                                               responseSize?: number,
-                                                               logMetaData?: MetaData,
-                                                               requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                               maxTokens?: number): Promise<Result<T1, N1> | undefined>;
-
-    makeBlockingRequestWithFunctionsAlt<T1, T2, N1 extends string, N2 extends string>(systemMessage: string,
-                                                                                      messages: RequestMessageFormat[],
-                                                                                      model: GPTModels,
-                                                                                      actionName: string,
-                                                                                      functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>],
-                                                                                      responseSize?: number,
-                                                                                      logMetaData?: MetaData,
-                                                                                      requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                      maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | undefined>;
-
-    makeBlockingRequestWithFunctionsAlt<T1, T2, T3, N1 extends string, N2 extends string, N3 extends string>(systemMessage: string,
-                                                                                                             messages: RequestMessageFormat[],
-                                                                                                             model: GPTModels,
-                                                                                                             actionName: string,
-                                                                                                             functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>],
-                                                                                                             responseSize?: number,
-                                                                                                             logMetaData?: MetaData,
-                                                                                                             requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                             maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | undefined>;
-
-    makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, N1 extends string, N2 extends string, N3 extends string, N4 extends string>(systemMessage: string,
-                                                                                                                                    messages: RequestMessageFormat[],
-                                                                                                                                    model: GPTModels,
-                                                                                                                                    actionName: string,
-                                                                                                                                    functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>],
-                                                                                                                                    responseSize?: number,
-                                                                                                                                    logMetaData?: MetaData,
-                                                                                                                                    requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                    maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | undefined>;
-
-    makeBlockingRequestWithFunctionsAlt<T1, T2, T3, T4, T5, N1 extends string, N2 extends string, N3 extends string, N4 extends string, N5 extends string>(systemMessage: string,
-                                                                                                                                                           messages: RequestMessageFormat[],
-                                                                                                                                                           model: GPTModels,
-                                                                                                                                                           actionName: string,
-                                                                                                                                                           functions: [ChatCompletionFunctionsWithTypes<T1, N1>, ChatCompletionFunctionsWithTypes<T2, N2>, ChatCompletionFunctionsWithTypes<T3, N3>, ChatCompletionFunctionsWithTypes<T4, N4>, ChatCompletionFunctionsWithTypes<T5, N5>],
-                                                                                                                                                           responseSize?: number,
-                                                                                                                                                           logMetaData?: MetaData,
-                                                                                                                                                           requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                                                                                                                                           maxTokens?: number): Promise<Result<T1, N1> | Result<T2, N2> | Result<T3, N3> | Result<T4, N4> | Result<T5, N5> | undefined>;
-
-
-    async makeBlockingRequestWithFunctionsAlt(systemMessage: string,
-                                              messages: RequestMessageFormat[],
-                                              model: GPTModels,
-                                              actionName: string,
-                                              functions: Array<ChatCompletionFunctionsWithTypes<any, any>>,
-                                              responseSize: number = 2000,
-                                              logMetaData?: MetaData,
-                                              requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
-                                              maxTokens: number = this.maxTokensPerRequest): Promise<Result<any, any>> {
+    async makeBlockingRequestWithFunctionsAlt<
+        F extends readonly ChatCompletionFunctionsWithTypes<any, string>[]
+    >(
+        systemMessage: string,
+        messages: RequestMessageFormat[],
+        model: GPTModels,
+        actionName: string,
+        functions: F,
+        responseSize: number = 2000,
+        logMetaData?: MetaData,
+        requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
+        maxTokens: number = this.maxTokensPerRequest
+    ): Promise<FunctionsResultUnion<F> | undefined> {
 
         const regexp = new RegExp(this.functionsMessagePlaceHolder, 'g');
 
@@ -405,7 +203,7 @@ export class Contractor<MetaData extends MetaDataType> {
             const objStr = result.choices[0]?.message?.content;
             assertIsDefined(objStr, `response content not generated [${JSON.stringify(result)}]`);
 
-            const objJson = JSON5.parse(objStr, undefined, (error, stack, root) => {
+            const objJson = JSON5.parse(objStr, undefined, (error) => {
                 if (error.message.includes(`invalid character '`)) {
                     return {type: 'skip-char'};
                 } else {
@@ -434,7 +232,7 @@ export class Contractor<MetaData extends MetaDataType> {
                 name: objType,
                 entry: validator,
                 value: validatedResult,
-            };
+            } as FunctionsResultUnion<F>;
 
         } catch (err: any) {
             this.logger?.error(`error performing [${actionName}]`, err);
@@ -528,7 +326,6 @@ export class Contractor<MetaData extends MetaDataType> {
                                messages: RequestMessageFormat[],
                                model: GPTModels,
                                responseSize: number = 2000,
-                               functions?: Array<ChatCompletionFunctionsWithTypes<any, any>>,
                                logMetaData?: MetaData,
                                requestOverrides?: Partial<ChatCompletionCreateParamsBase>,
                                maxTokens: number = this.maxTokensPerRequest): Promise<ReadableStream | undefined> {
@@ -668,44 +465,9 @@ export class Contractor<MetaData extends MetaDataType> {
 
     }
 
-    public performEmbedding = async (inputContent: EmbeddingCreateParams['input'], userId: string, model: 'text-embedding-ada-002' | 'text-embedding-3-small' | string, dimensions?: number, logMetaData?: MetaData,): Promise<Embedding[]> => {
-        const createEmbeddingRequest: EmbeddingCreateParams = {
-            input: inputContent,
-            model,
-            user: userId,
-            dimensions,
-        };
-        const result: CreateEmbeddingResponse & {
-            isFromCache?: boolean
-        } = (await truthy(this.cacher, async _ => await _.retrieveEmbeddingFromCache(createEmbeddingRequest, logMetaData))) ??
-            await this.aiClient.performEmbedding(createEmbeddingRequest, logMetaData);
-        // console.dir({
-        //     fromCache: result.isFromCache,
-        //     cacherExists: !!this.cacher,
-        //     req: createEmbeddingRequest,
-        //     testFromCache: await this.cacher?.retrieveEmbeddingFromCache(createEmbeddingRequest, logMetaData),
-        // }, {depth: 100});
-        await this.auditor?.auditRequest({
-            request: createEmbeddingRequest,
-            resultRaw: result,
-            result: {data: {content: result.data}},
-            requestType: 'embedding',
-            requestSig: logMetaData?.['requestSig'] ?? '-',
-            metaData: logMetaData,
-        });
-
-        if (!result.isFromCache) {
-
-            this.cacher?.cacheEmbedding(result, createEmbeddingRequest, logMetaData)
-                .then(_ignore => ({}));
-        }
-
-        return result.data;
-    }
-
-    private extractFunctionValidatedResult<T, I, K>(readContent: string | undefined, functionSchema: JSONSchemaType<T>) {
+    private extractFunctionValidatedResult<T>(readContent: string | undefined, functionSchema: JSONSchemaType<T>) {
         return truthy(readContent, funcArgs => {
-            const json = JSON5.parse(funcArgs, undefined, (error, stack, root) => {
+            const json = JSON5.parse(funcArgs, undefined, (error, _stack, root) => {
                 if (error.message.includes('invalid end of input')) {
                     const validator = this.schemaValidationCache.getValidator(functionSchema);
                     if (validator(root)) {
@@ -789,27 +551,11 @@ export class Contractor<MetaData extends MetaDataType> {
 
 }
 
-interface Wrapper<N extends string, T> {
-    type: N;
-    value: T;
-}
-
-export const createResultWrapper = <N extends string, T>(name: N, tSchema: JSONSchemaType<T>, description: string = ""): JSONSchemaType<Wrapper<N, T>> => ({
-    type: "object",
-    additionalProperties: false,
-    description,
-    properties: {
-        type: {type: "string", const: name},
-        value: tSchema,
-    },
-    required: ['type', 'value'],
-} as unknown as JSONSchemaType<Wrapper<N, T>>);
-
-export const createResultsWrapper = (funcs: ({
+export const createResultsWrapper = (funcs: ReadonlyArray<{
     name: string,
     parameters: JSONSchemaType<any>,
     description: string
-})[]): JSONSchemaType<any> & { type: string } => ({
+}>): JSONSchemaType<any> & { type: string } => ({
     $id: 'results-wrapper',
     title: 'Result',
     type: "object",

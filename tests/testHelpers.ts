@@ -45,7 +45,7 @@ export const waitForCondition = (checkCondition: () => boolean, intervalMs: numb
 };
 
 export class SplitStreamLines extends Transform {
-    _transform(chunk: any, encoding: string, callback: Function) {
+    _transform(chunk: any, _encoding: string, callback: Function) {
         for (const line of chunk.toString().split('\n')) {
             this.push(line);
         }
@@ -83,7 +83,7 @@ class ObjectArrayTransform extends Transform {
         }
     }
 
-    _transform(chunk: any, encoding: string, callback: TransformCallback): void {
+    _transform(chunk: any, _encoding: string, callback: TransformCallback): void {
         // Process the chunk if needed
         // For simplicity, we're just passing the chunk through
         this.push(chunk);

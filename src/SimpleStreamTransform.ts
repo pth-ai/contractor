@@ -8,7 +8,7 @@ export class SimpleStreamTransform<IN, OUT> extends Transform {
         this.transformer = transformer;
     }
 
-    _transform(chunk: IN, encoding: string, callback: TransformCallback) {
+    _transform(chunk: IN, _encoding: string, callback: TransformCallback) {
         this.push(this.transformer(chunk));
         callback();
     }

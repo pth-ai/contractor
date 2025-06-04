@@ -12,11 +12,11 @@ import {OpenAIStreamObject} from "./OpenAIStreamObject";
 export class OpenAIStreamChunkTransform extends Transform {
     private functionName?: string = undefined;
 
-    constructor(logger?: Logger, logMetaData?: object) {
+    constructor(_logger?: Logger, _logMetaData?: object) {
         super({objectMode: true});
     }
 
-    _transform(chunk: ChatCompletionChunk, encoding: string, callback: TransformCallback) {
+    _transform(chunk: ChatCompletionChunk, _encoding: string, callback: TransformCallback) {
         try {
             const funcName = chunk.choices[0]?.delta?.function_call?.name;
             if (funcName) {

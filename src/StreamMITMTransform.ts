@@ -15,7 +15,7 @@ export class StreamMITMTransform<T, OUT> extends Transform {
         this.onSuccessFinish = onSuccessFinish;
     }
 
-    _transform(chunk: string, encoding: string, callback: TransformCallback) {
+    _transform(chunk: string, _encoding: string, callback: TransformCallback) {
         new Promise<void>(async (resolve) => {
             try {
                 const input = JSON.parse(chunk) as StreamedObject<T>;

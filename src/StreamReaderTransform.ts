@@ -8,7 +8,7 @@ export class StreamReaderTransform<T> extends Transform {
         this.consumer = consumer;
     }
 
-    _transform(chunk: T, encoding: string, callback: Function) {
+    _transform(chunk: T, _encoding: string, callback: Function) {
         this.consumer(chunk);
         this.push(chunk);
         callback();

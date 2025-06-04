@@ -70,7 +70,7 @@ describe("ThrottledTransform", () => {
         const data = [1, 2, 3, 4, 5];
         const readStream = createReadableStream(data.slice());
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1
         };
         const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
@@ -93,7 +93,7 @@ describe("ThrottledTransform", () => {
         const data = [1, 2, 3, 4, 5];
         const readStream = createReadableStream(data.slice());
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1
         };
         const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
@@ -116,7 +116,7 @@ describe("ThrottledTransform", () => {
         const data = [1, 2, 3, 4, 5];
         const readStream = createReadableStream(data.slice());
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1
         };
         const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
@@ -141,7 +141,7 @@ describe("ThrottledTransform", () => {
         };
 
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
 
@@ -166,7 +166,7 @@ describe("ThrottledTransform", () => {
         };
 
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
 
@@ -194,7 +194,7 @@ describe("ThrottledTransform", () => {
         };
 
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
 
@@ -227,7 +227,7 @@ describe("ThrottledTransform", () => {
         };
 
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
 
@@ -278,7 +278,7 @@ describe("ThrottledTransform", () => {
         };
 
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes === 1
                 // throw error on second write
                 ? (() => {
@@ -321,7 +321,7 @@ describe("ThrottledTransform", () => {
         const data = [1, 2, 3];
         const readStream = createReadableStream(data.slice());
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
         const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);
@@ -385,7 +385,7 @@ describe("ThrottledTransform", () => {
 
         const readStream = createReadableStream(data.slice());
         let callTimes = 0;
-        const writeTo: WriteTo = async (x: any) => {
+        const writeTo: WriteTo = async () => {
             callTimes += 1;
         };
         const throttledTransform = new ThrottledTransform(options, basicLogger, writeTo);

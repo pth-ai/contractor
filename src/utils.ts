@@ -9,7 +9,7 @@ export function assertIsDefined<T>(value: T | null | undefined, errorMsg: string
 const toBinary = (string: string) => {
     const codeUnits = Uint16Array.from(
         { length: string.length },
-        (element, index) => string.charCodeAt(index)
+        (_element, index) => string.charCodeAt(index)
     );
     const charCodes = new Uint8Array(codeUnits.buffer);
 
